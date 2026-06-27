@@ -36,6 +36,41 @@ body:
       description: Which tests prove correctness; which evals prove quality/trajectory.
     validations:
       required: true
+  - type: textarea
+    id: declared-paths
+    attributes:
+      label: Declared paths (lane)
+      description: |
+        The ONLY files/globs this unit may touch — one per line. The path-scope gate fails a PR
+        that strays outside this lane. Mirrored into `.agent/unit.json.declaredPaths` on the branch.
+      placeholder: |
+        src/middleware/rateLimit.ts
+        src/app.ts
+    validations:
+      required: true
+  - type: input
+    id: required-test
+    attributes:
+      label: Required test (trajectory)
+      description: |
+        The test file this unit MUST add/modify. The trajectory eval fails if it is absent.
+        Mirrored into `.agent/unit.json.requiredTest`.
+      placeholder: "test/rateLimit.test.ts"
+    validations:
+      required: true
+  - type: input
+    id: acceptance-eval
+    attributes:
+      label: Acceptance eval contract (optional)
+      description: |
+        Deterministic acceptance eval this unit must satisfy, scenario-driven. Format:
+        `name[:route[:max[:method]]]`. For S1 (rate limiting): `rate-limit-429:/api/links:100:GET`.
+        Mirrored into `.agent/unit.json` (`evals`, `evalRoute`, `evalMax`, `evalMethod`). Leave blank
+        for units with no output rubric (e.g. docs/config). The eval then runs UNCONDITIONALLY (R5) —
+        a unit that claims the capability but doesn't deliver it → eval RED (no skip-green).
+      placeholder: "rate-limit-429:/api/links:100:GET"
+    validations:
+      required: false
   - type: dropdown
     id: parallel-safe
     attributes:

@@ -11,6 +11,7 @@ name: Security Gate
 on:
   pull_request:
     branches: [ master ]
+  merge_group:            # R7 — required checks must report on the merge-queue ref too
 
 permissions:
   contents: read

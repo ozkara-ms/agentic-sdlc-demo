@@ -1,0 +1,20 @@
+# CODEOWNERS — the human PR review gate for the agentic harness.
+#
+# 🟩 NATIVE enforcement: when the repository ruleset requires CODEOWNERS review
+# (set by demos/deploy/github/enforce-protections.ps1), GitHub itself BLOCKS merge
+# until an owner listed here approves the PR. This is the harness's "Human (PR gate)"
+# row — real platform enforcement, not orchestration. Replace @ozgurkarahan with the
+# real reviewing owner/team when you instantiate the harness into your own repo.
+
+# Default owner for everything in the repo.
+*                    @ozgurkarahan
+
+# Application source — the system under test.
+/src/                @ozgurkarahan
+
+# The governance harness itself (agents, prompts, workflows, issue forms).
+/.github/            @ozgurkarahan
+
+# CI scripts + the orchestrator/dispatcher (the layered 🟦 logic).
+/ci/                 @ozgurkarahan
+/orchestrator/       @ozgurkarahan

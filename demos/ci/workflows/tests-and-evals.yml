@@ -67,20 +67,24 @@ jobs:
       # Diff base works for BOTH pull_request and merge_group (R7) so the queue can pass.
       - name: Compute diff base + work-unit signal
         id: ctx
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          if [ "${{ github.event_name }}" = "merge_group" ]; then
-            echo "base=${{ github.event.merge_group.base_sha }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "merge_group" ]; then
+            echo "base=$MERGE_BASE_SHA" >> "$GITHUB_OUTPUT"
           else
-            echo "base=origin/${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
+            echo "base=origin/$BASE_REF" >> "$GITHUB_OUTPUT"
           fi
           # A work-unit PR is one a Dev-fleet agent authored: labelled agentic-work-unit OR a copilot/* branch.
-          LABELS='${{ join(github.event.pull_request.labels.*.name, ",") }}'
-          HEAD='${{ github.head_ref }}'
           WU=false
-          case ",$LABELS," in *",agentic-work-unit,"*) WU=true;; esac
-          case "$HEAD" in copilot/*) WU=true;; esac
+          case ",$PR_LABELS," in *",agentic-work-unit,"*) WU=true;; esac
+          case "$HEAD_REF" in copilot/*) WU=true;; esac
           echo "work_unit=$WU" >> "$GITHUB_OUTPUT"
-          echo "work-unit PR: $WU  (labels=$LABELS head=$HEAD)"
+          echo "work-unit PR: $WU  (labels=$PR_LABELS head=$HEAD_REF)"
 
       # Trajectory eval — did the agent touch its declared files and add the required test?
       # R4: for a work-unit PR, .agent/unit.json is REQUIRED — its absence FAILS the gate.
@@ -143,17 +147,21 @@ jobs:
           node-version: 20
       - name: Compute diff base + work-unit signal
         id: ctx
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          if [ "${{ github.event_name }}" = "merge_group" ]; then
-            echo "base=${{ github.event.merge_group.base_sha }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "merge_group" ]; then
+            echo "base=$MERGE_BASE_SHA" >> "$GITHUB_OUTPUT"
           else
-            echo "base=origin/${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
+            echo "base=origin/$BASE_REF" >> "$GITHUB_OUTPUT"
           fi
-          LABELS='${{ join(github.event.pull_request.labels.*.name, ",") }}'
-          HEAD='${{ github.head_ref }}'
           WU=false
-          case ",$LABELS," in *",agentic-work-unit,"*) WU=true;; esac
-          case "$HEAD" in copilot/*) WU=true;; esac
+          case ",$PR_LABELS," in *",agentic-work-unit,"*) WU=true;; esac
+          case "$HEAD_REF" in copilot/*) WU=true;; esac
           echo "work_unit=$WU" >> "$GITHUB_OUTPUT"
       - name: Changed files must stay within the unit's declared paths
         env:

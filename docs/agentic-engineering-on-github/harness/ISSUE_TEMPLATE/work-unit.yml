@@ -71,6 +71,23 @@ body:
       placeholder: "rate-limit-429:/api/links:100:GET"
     validations:
       required: false
+  - type: textarea
+    id: e2e-real-results
+    attributes:
+      label: E2E real-results contract (REQUIRED for the end-to-end unit)
+      description: |
+        For the one ordered **end-to-end acceptance unit**, state the observable behaviour the test must
+        assert against the **LIVE deployed URL** (the running system — not a stub/mock), as a post-deploy
+        gate. The Development agent writes the actual test; this is the contract it must meet. For S1:
+        "Against the deployed URL: under the threshold the API returns 200; past the threshold it returns
+        429 with a numeric `Retry-After` and `RateLimit-Limit`/`RateLimit-Remaining` headers." Leave blank
+        for non-E2E units. A plan whose E2E unit leaves this blank — or that only asserts local
+        stubs/mocks — is incomplete and the Rubber-Duck gate should reject it.
+      placeholder: |
+        Against https://<deployed-url>: under threshold -> 200; past threshold -> 429 with
+        a numeric Retry-After and RateLimit-* headers. Test hits the live URL, not a stub.
+    validations:
+      required: false
   - type: dropdown
     id: parallel-safe
     attributes:

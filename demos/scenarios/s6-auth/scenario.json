@@ -1,0 +1,11 @@
+{
+  "id": "s6-auth",
+  "title": "Require an API key on /shorten (401 when missing)",
+  "intent": "Protect POST /shorten with an API key: requests missing the key get 401 + JSON error; valid requests proceed.",
+  "acceptance": "POST /shorten without x-api-key returns 401 + JSON {error}; GET /healthz stays 200. Non-429/400 status family — proves the eval is status-general.",
+  "evalRubric": "rubric.mjs",
+  "evalDefaults": { "route": "/shorten", "method": "POST", "max": 3 },
+  "appVariants": { "good": "good", "no-auth": "no-auth", "wrong-status": "wrong-status" },
+  "e2eTest": "test/e2e/auth.e2e.test.ts",
+  "status": "L5 — added to stress the eval with a non-400/429 status family"
+}

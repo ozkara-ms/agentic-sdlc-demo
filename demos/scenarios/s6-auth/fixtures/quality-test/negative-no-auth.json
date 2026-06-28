@@ -1,0 +1,7 @@
+{
+  "agent": "quality-test", "case": "negative-no-auth", "polarity": "negative",
+  "enforcement": "ci-job", "driver": "eval-rubric",
+  "title": "No auth check: missing key still 201 → caught (missing-key-not-rejected)",
+  "input": { "appVariant": "no-auth" },
+  "expect": { "outcome": "blocked", "signals": ["missing-key-not-rejected"] }
+}

@@ -1,0 +1,7 @@
+{
+  "agent": "deployment", "case": "workflow-conclusion-success-go", "polarity": "positive",
+  "enforcement": "local-assertion", "driver": "workflow-conclusion",
+  "title": "s6 deploy run success → GO (run-status gate is scenario-general)",
+  "input": { "identity": {"headSha":"s6aaa","workflowName":"deploy","event":"push"}, "runs": [{"runId":1,"headSha":"s6aaa","workflowName":"deploy","event":"push","status":"completed","conclusion":"success","runAttempt":1,"createdAt":"2026-06-29T10:00:00Z"}] },
+  "expect": { "outcome": "pass", "signals": [] }
+}

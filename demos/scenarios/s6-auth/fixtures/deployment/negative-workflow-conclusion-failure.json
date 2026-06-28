@@ -1,0 +1,7 @@
+{
+  "agent": "deployment", "case": "workflow-conclusion-failure-nogo", "polarity": "negative",
+  "enforcement": "local-assertion", "driver": "workflow-conclusion",
+  "title": "s6 deploy run failure → NO-GO (red caught, scenario-general)",
+  "input": { "identity": {"headSha":"s6aaa","workflowName":"deploy","event":"push"}, "runs": [{"runId":2,"headSha":"s6aaa","workflowName":"deploy","event":"push","status":"completed","conclusion":"failure","runAttempt":1,"createdAt":"2026-06-29T10:00:00Z"}] },
+  "expect": { "outcome": "blocked", "signals": ["run-failed"] }
+}

@@ -336,3 +336,48 @@ re-execution of those two gates is skipped.** Ledger: L18.
   scenario = a new `scenarios/<id>/` folder + (if a new acceptance *kind*) one rubric module, never a gate edit.
 - **Still open (honest):** live re-run of the generalized eval-rubric (400) + deploy E2E *inside* the live repo
   CI; independent human PR-reviewer needs a 2nd identity at demo time (solo repo).
+
+---
+
+## 🔁 LOOP 3 — Closed-loop deploy/run-status (2026-06-28)
+
+**Goal:** close **G1–G3** — the harness was BLIND to GitHub Actions run status (the DevOps agent observed
+only `/healthz`; the orchestrator was fire-and-forget; the loop never read the run conclusion, so "runs
+failing in GitHub" were invisible). Narrowed to this core by a rubber-duck **GO-WITH-FIXES** verdict;
+observability (**G4**) + Azure SRE agent + S6 deferred to L4 (`HARNESS_BACKLOG.md`). Regression guard stayed
+green throughout: **40 → 47 → 49 fixtures, 28 negatives caught, exit 0** (no scenario regressed).
+
+### What was BUILT (offline, Wave 1)
+- **M1** `demos/ci/lib/run-status.mjs` (PURE classifier/oracle + retry taxonomy) + `gh-run-reader.mjs` (the
+  only `gh`-shelling adapter). The pure/adapter split kills the M2→M1 circularity the duck flagged.
+- **M2** `ci/scripts/workflow-conclusion-check.mjs` + a `workflow-conclusion` validator driver + **7 canned
+  fixtures**. A "red pipeline" is replayable JSON, never a live one-shot (duck BLOCKING #1/#2/#5).
+- **M3** `orchestrator/cli.mjs --watch` — polls the EXACT run for a dispatched unit (identity-bound), classifies,
+  reacts per the retry taxonomy (retry ONLY transient; never auto-retry a real failure), `--report-issue`.
+- **M4** `ci/scripts/lm-judge.mjs` advisory default-on (deterministic `--verdict`/fixture) + driver + 2 fixtures:
+  token-absent ⇒ pass; verdict-fail ⇒ finding recorded yet **exit 0** (never part of the green invariant).
+- **M5** `CONTRACT.md` §11 crutch-vs-durable annotation (the run-status gate = **Durable**); `deployment.agent.md`
+  made run-conclusion-aware; `AGENT.md` How-to-Verify refreshed (49/49) + standing constraints.
+
+### Agent × scenario (tested / behaved / fixed)
+| Agent / gate | Tested how | As expected? | Defect / fix |
+|---|---|---|---|
+| **Deployment (run-status, NEW)** | 7 canned fixtures: success · rerun-attempt2 · failure-for-SHA · green-for-WRONG-SHA · older-green+newer-red · queued-timeout · cancelled | ✅ all 7 (2 pass, 5 negatives caught) | none — net-new gate, built to the duck's spec |
+| **Quality-Test (lm-judge advisory)** | 2 fixtures: no-token skip; verdict=fail | ✅ skip⇒pass; fail⇒`advisory-fail` recorded yet exit 0 | none — reframed optional→advisory-default-on |
+| **Deployment (smoke) + all S1–S5 agents** | full regression | ✅ green throughout | none |
+
+**Pure-core self-test (temp, deleted after running): 13/13** — classifier (success/failure/skipped/neutral/queued)
++ retry taxonomy (proceed/wait/retry/report) + selection (older-green+newer-red ⇒ no-go).
+
+### Still open / honest boundaries
+- **Wave 2 (live) — DONE (2026-06-28).** Full closed loop proven on the public `agentic-sdlc-demo-live`:
+  orchestrator `--assign` dispatched **@copilot** to issue #29 (it opened PR #32); a GREEN PR (#30) Tests & Evals
+  success → `--watch` **GO** (exit 0); a RED PR (#31, deliberately failing test) Tests & Evals failure → `--watch
+  --report-issue 29` **NO-GO** (exit 1) and **posted the NO-GO to issue #29**. The orchestrator is no longer
+  fire-and-forget — it observes the real run conclusion and reports. (Bonus `deploy.yml inject_fault` run was
+  dispatched; `--watch` correctly held `pending→wait` on GitHub's runner queue — the transient path, proven live.)
+  Used the workflow-scoped keyring token (cleared `GH_TOKEN`). Proof scaffolding left on the test repo by request.
+- **G4 observability untouched** — production exceptions remain invisible until backlog **B1** ships.
+- **Do-not-redo:** run-status classification lives ONLY in `ci/lib/run-status.mjs` (pure) — never re-add
+  conclusion literals to the validator/runner. A new scenario reuses the `workflow-conclusion` gate as-is
+  (fixtures carry their own canned `runs`+`identity`).

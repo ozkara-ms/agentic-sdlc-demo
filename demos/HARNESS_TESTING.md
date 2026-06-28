@@ -37,8 +37,8 @@ shared harness code, that coupling *is the defect to fix*. See `CONTRACT.md` §1
 | **7. Record** | Append to `HARNESS_CHANGELOG.md`: agent × scenario — tested? behaved-as-expected? defect found? fix applied? Append `L13+` to the session ledger `files/validation-log.md`. | loop-memory updated |
 
 **Regression guard (non-negotiable):** after ANY harness edit, re-run `node demos/validate/run.mjs`
-(all scenarios) and confirm **S1 is still 19/19, 10/10 negatives caught, exit 0**. A generalization that
-breaks S1 is not done.
+(all scenarios) and confirm the full matrix is **49/49, 28/28 negatives caught, exit 0** and S1 stays
+green. A generalization that breaks an existing scenario is not done.
 
 ---
 
@@ -83,6 +83,7 @@ fixtures are the harness's conscience.
 | **Security** | `ci/scripts/pin-check.mjs` (+ slopsquat) | pinned, real deps | an unpinned / typosquatted / mutable-range dep | give the scenario a PR that adds a dependency |
 | **Code-Review** | `ci/scripts/doc-coupling-check.mjs` | code change ships with doc + test update | an arch change with no doc update | declare the scenario's code↔doc coupling |
 | **Deployment** | `ci/scripts/smoke-check.mjs` | live `/healthz` 200 → go | a faulted build (500) → no-go + rollback | scenario can reuse the smoke gate as-is (content-general) |
+| **Deployment (run-status, Loop-3)** | `ci/scripts/workflow-conclusion-check.mjs` (+ `ci/lib/run-status.mjs`) | the deploy run for the target SHA concluded `success` → go | a red/cancelled/timed-out/queued run, or a green run for the WRONG sha, or an older-green+newer-red → no-go | scenario reuses the oracle as-is; fixtures carry canned `runs`+`identity` (content-general) |
 
 ---
 
@@ -118,6 +119,7 @@ fixtures are the harness's conscience.
 - **Keep S1 green** after every refactor (the regression guard).
 - The **source repo `agentic-sdlc-demo` stays local-only** (commit, do not push) unless explicitly asked.
 - A **live capstone** keeps both Azure apps live + healthy (no teardown); verify live outcomes out-of-band.
+- **Deferred work goes to [`HARNESS_BACKLOG.md`](./HARNESS_BACKLOG.md)** (the discussion home), not silently dropped; the **current loop's durable handoff** is [`LOOP3.md`](./LOOP3.md) (so a fresh session resumes with zero loss).
 
 ---
 

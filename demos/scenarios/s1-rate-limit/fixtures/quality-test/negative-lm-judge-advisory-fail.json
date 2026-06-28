@@ -1,0 +1,10 @@
+{
+  "agent": "quality-test",
+  "case": "lm-judge-advisory-fail-recorded-non-blocking",
+  "polarity": "negative",
+  "enforcement": "advisory",
+  "driver": "lm-judge",
+  "title": "LM-judge verdict=FAIL records an advisory finding (the gate FIRES) yet the script still exits 0 — advisory, never part of the green invariant",
+  "input": { "verdict": "fail", "simulateToken": true },
+  "expect": { "outcome": "blocked", "signals": ["advisory-fail"] }
+}

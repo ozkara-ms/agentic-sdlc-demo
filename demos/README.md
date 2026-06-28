@@ -2,6 +2,11 @@
 
 > Entry point. The keystone is **[`CONTRACT.md`](./CONTRACT.md)** — read it first. The presenter's
 > step-by-step golden path is **[`DEMO_SCRIPT.md`](./DEMO_SCRIPT.md)**.
+>
+> **Loop docs:** [`HARNESS_TESTING.md`](./HARNESS_TESTING.md) (how we test+improve the harness) ·
+> [`HARNESS_CHANGELOG.md`](./HARNESS_CHANGELOG.md) (loop memory) ·
+> [`HARNESS_BACKLOG.md`](./HARNESS_BACKLOG.md) (deferred work) ·
+> [`LOOP3.md`](./LOOP3.md) (current loop — durable handoff).
 
 ## What this is
 
@@ -27,7 +32,7 @@ npm --prefix demos/sample-app ci
 npm --prefix demos/sample-app run build
 npm --prefix demos/sample-app test          # 15 unit+e2e tests, all green
 
-# 2. run the whole seeded validation matrix (19 fixtures, 10 adversarial negatives)
+# 2. run the whole seeded validation matrix (49 fixtures, 28 adversarial negatives)
 node demos/validate/run.mjs                  # exit 0 only if every gate behaves correctly
 ```
 The matrix prints one row per agent/gate, each **labelled by enforcement type**, and fails loudly
@@ -88,7 +93,7 @@ GitHub does not enforce "plan approval"; the dispatcher simply *chooses* not to 
 ## Status
 
 - **T1 (local backbone): complete and green** — sample app builds + 15 tests pass; the validation
-  matrix is 19/19 with all 10 negatives caught.
+  matrix is 49/49 with all 28 negatives caught (Loop-3 added the run-status + advisory-LM-judge gates).
 - **T2 / T3:** documented and ready to instantiate into a dedicated repo (D7→D8); not enabled on this
   asset-authoring repo by design.
 

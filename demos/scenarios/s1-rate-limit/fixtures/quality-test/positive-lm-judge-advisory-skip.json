@@ -1,0 +1,10 @@
+{
+  "agent": "quality-test",
+  "case": "lm-judge-advisory-skips-without-token",
+  "polarity": "positive",
+  "enforcement": "advisory",
+  "driver": "lm-judge",
+  "title": "LM-judge is advisory default-on: with no model token (e.g. fork PR) it records nothing and never blocks → pass (deterministic guard stays green)",
+  "input": { "simulateToken": false },
+  "expect": { "outcome": "pass", "signals": [] }
+}

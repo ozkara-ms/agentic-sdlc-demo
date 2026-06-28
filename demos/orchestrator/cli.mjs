@@ -22,12 +22,31 @@ function parseArgs(argv) {
     else if (a === '--repo') args.repo = argv[++i];
     else if (a === '--issues') args.issues = argv[++i];
     else if (a === '--json') args.json = true;
+    // Loop-3 (M3): --watch run-status mode (G2). Observe the EXACT run for a dispatched unit.
+    else if (a === '--watch') args.watch = true;
+    else if (a === '--workflow') args.workflow = argv[++i];
+    else if (a === '--sha') args.sha = argv[++i];
+    else if (a === '--event') args.event = argv[++i];
+    else if (a === '--branch') args.branch = argv[++i];
+    else if (a === '--report-issue') args.reportIssue = argv[++i];
+    else if (a === '--watch-timeout') args.watchTimeout = Number(argv[++i]);
+    else if (a === '--watch-interval') args.watchInterval = Number(argv[++i]);
+    else if (a === '--max-retries') args.maxRetries = Number(argv[++i]);
   }
   return args;
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+
+  // Loop-3 (M3): closed-loop watch mode. Observe the exact GitHub Actions run for a dispatched
+  // unit and react per the PURE retry taxonomy (run-status.mjs#decideReaction). This is the G2
+  // fix — the orchestrator is no longer fire-and-forget.
+  if (args.watch) {
+    const code = await watchRunStatus(args);
+    process.exit(code);
+  }
+
   if (!args.plan) {
     console.error('error: --plan <path> is required');
     process.exit(2);
@@ -105,6 +124,83 @@ async function assignViaGh(decision, plan, args) {
     }
   }
   return { assigned, failed };
+}
+
+// ⛔ EXTERNAL DEPENDENCY (T3 / Wave-2 live). Loop-3 (M3) closed-loop watch. Polls the EXACT
+// GitHub Actions run for a dispatched unit (identity-bound to the head sha + workflow), classifies
+// the conclusion with the PURE core, and reacts per the retry taxonomy — retry ONLY transient
+// (still-queued past the window), NEVER auto-retry a real failure. Reports a hard failure back to
+// the issue when --report-issue is given. Never invoked by the T1 validator.
+async function watchRunStatus(args) {
+  if (!args.repo || !args.sha) {
+    console.error('error: --watch requires --repo owner/name and --sha <headSha>');
+    return 2;
+  }
+  // Lazy imports so the dispatcher / T1 path never loads the gh adapter.
+  const { readRuns } = await import('../ci/lib/gh-run-reader.mjs');
+  const { evaluateRunStatus, decideReaction } = await import('../ci/lib/run-status.mjs');
+
+  const identity = { headSha: args.sha, repo: args.repo };
+  if (args.workflow) identity.workflowName = args.workflow;
+  if (args.event) identity.event = args.event;
+
+  const timeoutMs = (args.watchTimeout ?? 600) * 1000;
+  const intervalMs = (args.watchInterval ?? 10) * 1000;
+  const maxRetries = args.maxRetries ?? 1;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  let attempt = 1;
+  let windowStart = Date.now();
+  for (;;) {
+    let runs = [];
+    try {
+      runs = await readRuns({ repo: args.repo, workflow: args.workflow, branch: args.branch, event: args.event });
+    } catch (err) {
+      // A gh/API hiccup is transient — log and let the loop re-poll within the window.
+      console.error(`watch: gh read failed (transient) — ${err.message}`);
+    }
+    const evald = evaluateRunStatus(runs, identity);
+    const timedOut = Date.now() - windowStart >= timeoutMs;
+    const reaction = decideReaction(evald, { timedOut, attempt, maxRetries });
+    const run = evald.run;
+    console.log(`watch[${args.repo} ${args.sha.slice(0, 7)}]: ${evald.decision} → ${reaction.action}  (${reaction.reason})${run ? ` [run ${run.runId} attempt ${run.runAttempt} → ${run.conclusion ?? run.status}]` : ''}`);
+
+    if (reaction.action === 'proceed') return 0;
+    if (reaction.action === 'wait') { await sleep(intervalMs); continue; }
+    if (reaction.action === 'retry') {
+      console.log(`  ↻ transient — re-arming watch window (attempt ${attempt + 1}/${maxRetries + 1})`);
+      attempt += 1;
+      windowStart = Date.now();
+      await sleep(intervalMs);
+      continue;
+    }
+    // report-failure — hard failure, never auto-retried.
+    if (args.reportIssue) await reportToIssue(args, evald);
+    return 1;
+  }
+}
+
+// Comments a NO-GO back onto the dispatched unit's issue so the failure is visible in the loop
+// (closing G2/G3). Best-effort: a reporting failure must not mask the underlying run failure.
+async function reportToIssue(args, evald) {
+  try {
+    const { execFileSync } = await import('node:child_process');
+    const run = evald.run;
+    const body = [
+      `🔴 **Run-status gate: NO-GO** — the harness observed a failing pipeline for \`${args.sha}\`.`,
+      ``,
+      `- decision: \`${evald.decision}\``,
+      `- signals: ${(evald.signals ?? []).map((s) => `\`${s}\``).join(', ') || '(none)'}`,
+      `- reason: ${evald.reason}`,
+      run ? `- run: \`${run.runId}\` attempt \`${run.runAttempt}\` → \`${run.conclusion ?? run.status}\`` : `- run: (none matched the requested identity)`,
+      ``,
+      `_Reported automatically by \`orchestrator --watch\` (Loop-3 closed-loop deploy/run-status)._`,
+    ].join('\n');
+    execFileSync('gh', ['issue', 'comment', String(args.reportIssue), '--repo', args.repo, '--body', body], { encoding: 'utf8' });
+    console.log(`  ✓ reported NO-GO to issue #${args.reportIssue}`);
+  } catch (err) {
+    console.error(`  ✗ failed to report to issue #${args.reportIssue}: ${err.message}`);
+  }
 }
 
 main();

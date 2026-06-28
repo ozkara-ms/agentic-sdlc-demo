@@ -194,6 +194,27 @@ const drivers = {
     return { outcome: j.pass ? 'pass' : 'blocked', signals: j.signals ?? [] };
   },
 
+  // Loop-3 (M2): the Deployment gate's run-conclusion oracle. The fixture's `input` carries a
+  // canned `runs` array + `identity`; the pure run-status core decides GO/NO-GO. A red pipeline
+  // is replayable JSON here — never a live one-shot. (G1+G3)
+  'workflow-conclusion'(fx) {
+    const r = runScript('workflow-conclusion-check.mjs', ['--input', fx.path, '--json']);
+    const j = parseJson(r.stdout);
+    if (!j) return { outcome: 'error', signals: [] };
+    return { outcome: j.pass ? 'pass' : 'blocked', signals: j.signals ?? [] };
+  },
+
+  // Loop-3 (M4): the LM-judge is ADVISORY default-on. The script ALWAYS exits 0 (never blocks);
+  // it "fires" (records a finding) when the judge verdict is fail. We map a recorded finding to
+  // 'blocked' here ONLY to prove the advisory gate fires deterministically — exactly like the
+  // doc-coupling advisory gate. The real merge is never blocked by it.
+  'lm-judge'(fx) {
+    const r = runScript('lm-judge.mjs', ['--input', fx.path, '--json']);
+    const j = parseJson(r.stdout);
+    if (!j) return { outcome: 'error', signals: [] };
+    return { outcome: j.flagged ? 'blocked' : 'pass', signals: j.signals ?? [] };
+  },
+
   async dispatch(fx) {
     const mod = await import(pathToFileURL(join(DEMOS, 'orchestrator', 'dispatch.mjs')).href);
     const plan = {

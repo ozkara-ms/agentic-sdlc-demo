@@ -1,0 +1,15 @@
+{
+  "agent": "deployment",
+  "case": "workflow-conclusion-green-wrong-sha",
+  "polarity": "negative",
+  "enforcement": "local-assertion",
+  "driver": "workflow-conclusion",
+  "title": "A green run exists but for the WRONG sha → NO-GO (identity binding prevents passing on a stale unrelated success)",
+  "input": {
+    "identity": { "headSha": "aaa111", "workflowName": "deploy", "event": "push" },
+    "runs": [
+      { "runId": 103, "headSha": "bbb222", "workflowName": "deploy", "event": "push", "status": "completed", "conclusion": "success", "runAttempt": 1, "createdAt": "2026-06-28T10:00:00Z" }
+    ]
+  },
+  "expect": { "outcome": "blocked", "signals": ["no-matching-run"] }
+}

@@ -97,7 +97,10 @@ was `demos/fixtures/<agent>/<case>.json` pre-scenario-axis — see §10)*:
 - **quality-test** → `{ "appVariant": "good"|"missing-retry-after"|"no-429" }` ; runs eval rubric.
 - **security-compliance** → `{ "manifest": <package.json fragment>, "sink"?: string }` ; pin/slopsquat + sink.
 - **code-review** → `{ "diff": <descriptor>, "docsTouched": boolean }` ; advisory flag (non-blocking).
-- **deployment** → `{ "smoke": "pass"|"fail" }` ; rollback/no-go on fail.
+- **deployment** → **smoke** driver: `{ "smoke": "pass"|"fail" }` (rollback/no-go on fail) **OR**
+  **workflow-conclusion** driver *(Loop-3, G1/G3)*: `{ "identity": { "headSha", "workflowName", "event" },
+  "runs": [ { "runId", "headSha", "status", "conclusion", "runAttempt", "createdAt" }, … ] }` — the pure
+  run-status oracle (`ci/lib/run-status.mjs`) selects the newest identity-matching run and decides GO/NO-GO.
 - **orchestrator** → `{ "planApprovedLabel": boolean, "units": <dag> }` ; dispatch only if approved.
 
 ## 5. Tier → enforcement map (honesty contract)
@@ -187,3 +190,20 @@ demos/scenarios/<id>/
 
 **Adding a scenario never edits the validator/runner — only adds a folder.** That property *is* the
 Loop-2 success criterion ("no S1 hardcoding remains").
+
+---
+
+## 11. Gate durability annotation (Loop 3 — "crutch vs durable", 2026-06-28)
+
+> SME move 4 (rubber-duck-narrowed to the new gate only — full-matrix taxonomy is L4 backlog **B4**).
+> The question for every gate: *does it survive a 2× smarter model, or is it a crutch for today's?*
+
+| Gate (driver) | Crutch or **Durable** | Rationale |
+|---|---|---|
+| `workflow-conclusion` (Loop-3 run-status oracle) | **Durable** | It verifies an *external fact* — did GitHub Actions actually conclude `success` for this exact SHA. No model improvement makes "the pipeline went red" acceptable; observing run truth is model-agnostic and only gets MORE necessary as agents act more autonomously. |
+| `lm-judge` (advisory) | Crutch-ish → **kept advisory** | A probabilistic quality opinion. Useful signal, but never load-bearing; as models improve its *blocking* value drops, so it stays advisory (never part of the green invariant). |
+
+**Talk-track:** "The run-status gate isn't scaffolding we'll delete when models get better — it's the
+opposite. The smarter and more autonomous the agents, the more you need a deterministic, model-agnostic
+check that the pipeline they drove actually went green. We annotate every gate this way so we know what
+to keep and what to retire." *(Full crutch/durable pass over all gates = L4 backlog B4.)*

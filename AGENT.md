@@ -50,7 +50,8 @@ Each stage is a "functionality in the repo" the presenter can jump to independen
 | Fallback | Trigger the fallback path once | Pre-baked branch / recording renders the same outcome |
 | Setup | Follow setup instructions on a clean environment | Environment reproduces from scratch with no hidden state |
 | Asset integrity | Lint `docs/agentic-engineering-on-github/harness/**/*.yml` + check the asset's internal links | All harness YAML parses; every cross-doc link resolves |
-| **Tier-1 demo (runnable, offline)** | `node demos/validate/run.mjs` | `19/19 fixtures correct`, `negatives caught: 10/10`, exit 0 — each gate labelled by enforcement type |
+| **Tier-1 demo (runnable, offline)** | `node demos/validate/run.mjs` | `49/49 fixtures correct`, `negatives caught: 28/28`, exit 0 — each gate labelled by enforcement type |
+| **Harness run-status gate (Loop 3)** | `node demos/validate/run.mjs --filter deployment` | deployment positives pass + run-conclusion negatives caught (red-for-SHA, green-for-wrong-SHA, older-green+newer-red, queued-timeout, cancelled) |
 | **Harness scenario (one)** | `node demos/validate/run.mjs --scenario s1` | one scenario's positives pass + negatives caught (scenario axis — `CONTRACT.md` §10) |
 | **Tier-1 sample app** | `npm --prefix demos/sample-app ci && npm --prefix demos/sample-app test` | 15 unit+e2e tests green (the "before" URL-shortener, no rate limiting yet) |
 
@@ -110,6 +111,11 @@ Read `~/projects/memory/agent-config/workflow.md` for the full set of global wor
 3. **No Blind Retries** — Diagnose root cause on failure. Don't retry non-transient errors.
 4. **Keep It Simple** — Don't add features, refactor code, or make improvements beyond what was asked.
 5. **Wiki-First Memory** — Durable lessons live in `~/projects/memory/wiki/`, NOT in per-project `.ai/` folders (deprecated 2026-04-22).
+
+## Standing design constraints (Ozgur, 2026-06-28 — apply to ALL designs)
+
+- **Azure = internal subscription; cost is NOT a constraint.** Never gate, shrink, or simplify a design to save spend — prefer the *correct* architecture. (Full note: `~/projects/memory/agent-config/platform.md`.)
+- **Destined for PUBLIC-INTERNET publication** (a Microsoft solution). Design for public consumption: secretless posture (OIDC + managed identity), LICENSE, reproducible clean-clone setup, no internal-only assumptions, presentable docs.
 
 ## Platform & Environment
 

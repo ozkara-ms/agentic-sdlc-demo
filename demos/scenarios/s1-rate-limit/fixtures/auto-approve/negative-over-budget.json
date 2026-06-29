@@ -1,6 +1,6 @@
 {
   "agent": "auto-approve", "case": "negative-over-budget", "polarity": "negative",
   "enforcement": "local-assertion", "driver": "auto-approve", "title": "Refuse: approval budget exhausted",
-  "input": { "repo": "ozgurkarahan/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "approvalsSoFar": 3, "maxApprovals": 3, "testMode": true },
+  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "approvalsSoFar": 3, "maxApprovals": 3, "testMode": true },
   "expect": { "outcome": "blocked", "signals": ["over-budget"] }
 }

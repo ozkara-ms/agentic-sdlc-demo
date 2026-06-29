@@ -25,7 +25,7 @@
   upsert the named ruleset). `-Remove` tears the GitHub-side enforcement back down (for teardown).
 
 .EXAMPLE
-  pwsh ./enforce-protections.ps1 -Repo ozgurkarahan/agentic-sdlc-demo-live -Reviewer ozgurkarahan
+  pwsh ./enforce-protections.ps1 -Repo <your-org>/agentic-sdlc-demo-live -Reviewer <your-username>
 .EXAMPLE
   pwsh ./enforce-protections.ps1 -Repo ... -Reviewer ... -DryRun          # show, don't mutate
 .EXAMPLE
@@ -35,8 +35,8 @@
 #>
 [CmdletBinding()]
 param(
-  [string]   $Repo      = 'ozgurkarahan/agentic-sdlc-demo-live',
-  [string]   $Reviewer  = 'ozgurkarahan',
+  [string]   $Repo      = '<your-org>/agentic-sdlc-demo-live',
+  [string]   $Reviewer  = '<your-username>',
   [string]   $Branch    = 'master',
   [string]   $RulesetName = 'agentic-harness-protections',
   [string[]] $RequiredChecks = @(

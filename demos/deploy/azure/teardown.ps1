@@ -20,7 +20,7 @@
 param(
   [string]$Subscription  = '<azure-subscription-id>',
   [string]$ResourceGroup = 'rg-agentic-sdlc-demo',
-  [string]$Repo          = 'ozgurkarahan/agentic-sdlc-demo-live',
+  [string]$Repo          = '<your-org>/agentic-sdlc-demo-live',
   [string]$AppRegName    = 'agentic-sdlc-demo-gha',
   [switch]$KeepRepoSide,
   [switch]$NoWait

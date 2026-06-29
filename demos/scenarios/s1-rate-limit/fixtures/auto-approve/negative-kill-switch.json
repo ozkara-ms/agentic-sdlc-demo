@@ -1,6 +1,6 @@
 {
   "agent": "auto-approve", "case": "negative-kill-switch", "polarity": "negative",
   "enforcement": "local-assertion", "driver": "auto-approve", "title": "Refuse: HARNESS_KILL kill-switch blocks all approvals",
-  "input": { "repo": "ozgurkarahan/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "killSwitch": true, "testMode": true },
+  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "killSwitch": true, "testMode": true },
   "expect": { "outcome": "blocked", "signals": ["kill-switch"] }
 }

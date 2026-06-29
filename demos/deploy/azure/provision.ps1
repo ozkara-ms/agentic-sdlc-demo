@@ -37,7 +37,7 @@ param(
   [string]$Subscription   = '<azure-subscription-id>',
   [string]$ResourceGroup  = 'rg-agentic-sdlc-demo',
   [string]$Location       = 'swedencentral',
-  [string]$Repo           = 'ozgurkarahan/agentic-sdlc-demo-live',
+  [string]$Repo           = '<your-org>/agentic-sdlc-demo-live',
   [string]$AppRegName     = 'agentic-sdlc-demo-gha',
   [string]$LogAnalytics   = 'log-agentic-sdlc',
   [string]$AcaEnv         = 'cae-agentic-sdlc',

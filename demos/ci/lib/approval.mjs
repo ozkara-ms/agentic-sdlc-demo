@@ -10,8 +10,8 @@
 // SAFETY: "the loop dispatched it" is NOT a sufficient boundary on a PUBLIC repo. EVERY precondition
 // below must hold or we REFUSE. Default is DRY-RUN; a live approval requires AUTO_APPROVE_TEST_MODE=1.
 
-export const ALLOWED_REPO = 'ozkara-ms/agentic-sdlc-demo-live';
-export const ALLOWED_REPOS = ['ozkara-ms/agentic-sdlc-demo-live', 'ozgurkarahan/agentic-sdlc-demo-live'];
+export const ALLOWED_REPO = '<your-org>/agentic-sdlc-demo-live';
+export const ALLOWED_REPOS = ['<your-org>/agentic-sdlc-demo-live'];
 export const ALLOWED_BRANCH_PREFIXES = ['copilot/', 'loop4/', 'proof/loop4'];
 export const REQUIRED_LABEL = 'loop4-test';
 // A PR touching any of these is REFUSED (it could change what the gate enforces) unless the path is

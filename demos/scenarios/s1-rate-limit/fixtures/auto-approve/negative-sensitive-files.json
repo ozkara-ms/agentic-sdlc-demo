@@ -1,6 +1,6 @@
 {
   "agent": "auto-approve", "case": "negative-sensitive-files", "polarity": "negative",
   "enforcement": "local-assertion", "driver": "auto-approve", "title": "Refuse: PR changes .github/workflows (could alter what the gate enforces)",
-  "input": { "repo": "ozgurkarahan/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "changedFiles": ["src/app.ts", ".github/workflows/deploy.yml"], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "declaredPaths": ["src/app.ts"], "testMode": true },
+  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "changedFiles": ["src/app.ts", ".github/workflows/deploy.yml"], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "declaredPaths": ["src/app.ts"], "testMode": true },
   "expect": { "outcome": "blocked", "signals": ["sensitive-files-changed"] }
 }

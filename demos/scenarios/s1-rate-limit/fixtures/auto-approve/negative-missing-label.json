@@ -1,6 +1,6 @@
 {
   "agent": "auto-approve", "case": "negative-missing-label", "polarity": "negative",
   "enforcement": "local-assertion", "driver": "auto-approve", "title": "Refuse: PR lacks loop4-test label",
-  "input": { "repo": "ozgurkarahan/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": [], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "testMode": true },
+  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": [], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "testMode": true },
   "expect": { "outcome": "blocked", "signals": ["missing-label"] }
 }

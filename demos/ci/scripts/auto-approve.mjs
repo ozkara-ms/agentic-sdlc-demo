@@ -82,7 +82,7 @@ async function liveApprove(a) {
   const d = decideApproval(ctx);
   console.log(`approve-deploy ${a.approveRun}: ${d.approve ? 'APPROVE' : d.dryRun ? 'DRY-RUN' : 'REFUSE'} — ${d.reason} [${d.signals.join(',')}]`);
   if (d.approve && prod) {
-    const r = gh(['api', '-X', 'POST', `repos/${a.repo}/actions/runs/${a.approveRun}/pending_deployments`, '-f', `environment_ids[]=${prod.environment.id}`, '-f', 'state=approved', '-f', 'comment=Loop-4 TEST-MODE delegated approval — no human reviewed at approval time']);
+    const r = gh(['api', '-X', 'POST', `repos/${a.repo}/actions/runs/${a.approveRun}/pending_deployments`, '-F', `environment_ids[]=${prod.environment.id}`, '-f', 'state=approved', '-f', 'comment=Loop-4 TEST-MODE delegated approval - no human reviewed at approval time']);
     if (r.err) { console.log(`  KNOWN-DEFECT: pending_deployments approve failed — ${r.msg.split('\n')[0]}`); process.exitCode = 1; return; }
     console.log('  ✓ delegated-approved production deployment (owner token; NO human reviewed at approval time)');
   } else if (d.approve && !prod) { console.log('  no production pending_deployment yet'); }

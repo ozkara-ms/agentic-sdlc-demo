@@ -11,6 +11,7 @@
 // below must hold or we REFUSE. Default is DRY-RUN; a live approval requires AUTO_APPROVE_TEST_MODE=1.
 
 export const ALLOWED_REPO = 'ozkara-ms/agentic-sdlc-demo-live';
+export const ALLOWED_REPOS = ['ozkara-ms/agentic-sdlc-demo-live', 'ozgurkarahan/agentic-sdlc-demo-live'];
 export const ALLOWED_BRANCH_PREFIXES = ['copilot/', 'loop4/', 'proof/loop4'];
 export const REQUIRED_LABEL = 'loop4-test';
 // A PR touching any of these is REFUSED (it could change what the gate enforces) unless the path is
@@ -31,7 +32,7 @@ export function decideApproval(ctx = {}) {
   const refuse = (sig, reason) => ({ approve: false, dryRun: false, reason, signals: [sig] });
 
   if (ctx.killSwitch) return refuse('kill-switch', 'HARNESS_KILL set — refusing all approvals');
-  if (ctx.repo !== ALLOWED_REPO) return refuse('repo-not-allowed', `repo ${ctx.repo} not in allowlist`);
+  if (!ALLOWED_REPOS.includes(ctx.repo)) return refuse('repo-not-allowed', `repo ${ctx.repo} not in allowlist`);
   if (!ctx.ledger || !ctx.ledger[ctx.runId]) return refuse('not-in-ledger', `run ${ctx.runId} not in the dispatch ledger`);
   if (ctx.ledger[ctx.runId].expectedSha && ctx.headSha !== ctx.ledger[ctx.runId].expectedSha) {
     return refuse('sha-mismatch', `head ${ctx.headSha} != ledger ${ctx.ledger[ctx.runId].expectedSha}`);

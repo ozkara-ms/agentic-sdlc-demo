@@ -12,7 +12,7 @@ A ready-to-run, **presenter-led demo environment** that showcases the full softw
 | Topic | Agentic Software Development Lifecycle |
 | Format | Demo (presenter-led, customer-facing) |
 | Audience | Customer technical leadership + technical stakeholders; reusable across audiences |
-| Status | In progress — reusable white-label asset **"Agentic Engineering on GitHub"** authored under `docs/agentic-engineering-on-github/` (Story + Agents/Skills/Harness + GitHub pipeline + drop-in `harness/`). **Tier-1 runnable demo backbone complete** under `demos/` (sample app + 6-agent harness + dispatcher + 19-fixture validation matrix, all green offline). **Phase 0 of the live path complete (2026-06-28, commit `4a34e7b`, unpushed):** all 13 rubber-duck wiring fixes (R1–R13) applied — ACR + managed-identity deploy-by-digest + both rollbacks, issue-native plan-lint, CODEOWNERS/ruleset automation with anti-self-lock, harness-defined live E2E; release path is **secretless** (OIDC + AcrPull MI). Tiers 2–3 live execution (enforced GitHub repo + live `@copilot` fleet + real Azure spend) is the **human-gated Phase A** next step |
+| Status | **Demo-ready (effective A-).** Reusable asset + runnable `demos/` (74/74 fixtures, 45 neg, S1–S6, 8 agents) + one-command from-scratch test (`demos/e2e-from-scratch.ps1`). **Live closed loop PROVEN** on `ozkara-ms/agentic-sdlc-demo-live` (Sweden Central, sub-2): @copilot dispatch → gates → staging→prod deploy + rollback, prod `/healthz` 200, with TEST-MODE delegated prod-approval. Both repos migrated to the unlimited `ozkara-ms` org. Open: bug #21 (limiter behind ACA ingress), B1 observability/SRE, B6 doc-steward workflow. |
 
 ## Demo Concept
 

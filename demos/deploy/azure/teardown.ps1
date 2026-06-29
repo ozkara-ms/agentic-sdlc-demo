@@ -18,7 +18,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$Subscription  = '<azure-subscription-id>',
+  [string]$Subscription  = '',
   [string]$ResourceGroup = 'rg-agentic-sdlc-demo',
   [string]$Repo          = '<your-org>/agentic-sdlc-demo-live',
   [string]$AppRegName    = 'agentic-sdlc-demo-gha',
@@ -38,6 +38,8 @@ function Gh-Fallback([string[]]$ghArgs) {
   if ($LASTEXITCODE -ne 0) { $prev=$env:GH_TOKEN; $env:GH_TOKEN=''; & gh @ghArgs 2>$null; $env:GH_TOKEN=$prev }
 }
 
+# Default to the currently logged-in subscription when -Subscription is not supplied.
+if (-not $Subscription) { $Subscription = (az account show --query id -o tsv) }
 az account set -s $Subscription 2>$null
 
 Step "1. Resource group ($ResourceGroup)"

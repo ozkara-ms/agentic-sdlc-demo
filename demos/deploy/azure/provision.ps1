@@ -34,7 +34,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$Subscription   = '<azure-subscription-id>',
+  [string]$Subscription   = '',
   [string]$ResourceGroup  = 'rg-agentic-sdlc-demo',
   [string]$Location       = 'swedencentral',
   [string]$Repo           = '<your-org>/agentic-sdlc-demo-live',
@@ -58,6 +58,8 @@ function Step($m) { Write-Host "`n=== $m ===" -ForegroundColor White }
 
 # ---------------------------------------------------------------------------
 Step "0. Context + extensions"
+# Default to the currently logged-in subscription when -Subscription is not supplied.
+if (-not $Subscription) { $Subscription = (az account show --query id -o tsv) }
 az account set -s $Subscription
 $ctx = az account show --query "{name:name,id:id,tenant:tenantId}" -o json | ConvertFrom-Json
 Ok "Subscription: $($ctx.name) ($($ctx.id))"

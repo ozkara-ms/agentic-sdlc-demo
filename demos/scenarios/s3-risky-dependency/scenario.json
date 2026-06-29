@@ -1,5 +1,0 @@
-{
-  "title": "Add a slug-helper dependency — pinned & non-typosquatted, or the security gate goes RED",
-  "intent": "Add a slug-collision helper library to the URL-shortener so generated slugs don't clash.",
-  "note": "Stresses the supply-chain pin/slopsquat gate with a DIFFERENT dependency set than S1 (uuidd typo, slugify:latest, git source). Proves pin-check.mjs carries no S1-specific allowlist — it is content-general. No evalDefaults/evalRubric: this scenario uses the pin-check + plan-lint drivers, not the request oracle."
-}

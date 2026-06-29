@@ -27,7 +27,7 @@ const session = await joinSession({
             description:
                 "Live presenter dashboard for the agentic SDLC demo: the frozen story + unit waves, the " +
                 "7-stage pipeline (intake→plan→implement→test→review→PR→deploy), and every gate's pass/caught " +
-                "result with its real enforcement label — wired to `node demos/validate/run.mjs`.",
+                "result with its real enforcement label — wired to `node _internal/harness-selftest/validate/run.mjs`.",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -98,7 +98,7 @@ const session = await joinSession({
                 },
                 {
                     name: "cockpit_run",
-                    description: "Run the demo gates LIVE via `demos/validate/run.mjs --json` and stream results into the cockpit. Optionally pass a single agent to run just that stage's gate.",
+                    description: "Run the demo gates LIVE via `_internal/harness-selftest/validate/run.mjs --json` and stream results into the cockpit. Optionally pass a single agent to run just that stage's gate.",
                     inputSchema: {
                         type: "object",
                         properties: {

@@ -413,14 +413,14 @@ function renderScore(state){
 
 function renderBanner(state){
   const b=document.getElementById("banner");
-  if(state.error){ b.innerHTML = `<div class="banner err">⚠ Live run failed: ${esc(state.error)}<br>Pre-flight: <code>npm --prefix demos/sample-app ci &amp;&amp; npm --prefix demos/sample-app run build</code> — or use <b>Replay</b>.</div>`; }
+  if(state.error){ b.innerHTML = `<div class="banner err">⚠ Live run failed: ${esc(state.error)}<br>Pre-flight: <code>npm --prefix _internal/harness-selftest/sample-app ci &amp;&amp; npm --prefix _internal/harness-selftest/sample-app run build</code> — or use <b>Replay</b>.</div>`; }
   else b.innerHTML="";
 }
 
 function renderFoot(state){
   const f=document.getElementById("foot");
   const t = state.lastRunAt ? new Date(state.lastRunAt).toLocaleTimeString() : "—";
-  f.innerHTML = `Source: <code>node demos/validate/run.mjs --json</code> · last update ${t} · `+
+  f.innerHTML = `Source: <code>node _internal/harness-selftest/validate/run.mjs --json</code> · last update ${t} · `+
     (state.mode==="replay"?"showing the pre-baked golden snapshot (fallback)":"live from this repo");
 }
 

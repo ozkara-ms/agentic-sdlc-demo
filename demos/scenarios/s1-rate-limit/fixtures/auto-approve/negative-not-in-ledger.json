@@ -1,6 +1,0 @@
-{
-  "agent": "auto-approve", "case": "negative-not-in-ledger", "polarity": "negative",
-  "enforcement": "local-assertion", "driver": "auto-approve", "title": "Refuse: run not in the dispatch ledger",
-  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "12345", "headSha": "abc", "prLabels": ["loop4-test"], "branch": "copilot/u1", "ledger": {"999": {"expectedSha": "abc"}}, "testMode": true },
-  "expect": { "outcome": "blocked", "signals": ["not-in-ledger"] }
-}

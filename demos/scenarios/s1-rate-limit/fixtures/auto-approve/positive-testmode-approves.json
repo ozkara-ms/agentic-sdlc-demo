@@ -1,7 +1,0 @@
-{
-  "agent": "auto-approve", "case": "positive-testmode-approves", "polarity": "positive",
-  "enforcement": "local-assertion", "driver": "auto-approve",
-  "title": "All preconditions hold + AUTO_APPROVE_TEST_MODE → delegated approve (logged: no human reviewed)",
-  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "changedFiles": ["src/app.ts"], "branch": "copilot/u1", "environment": "production", "currentUserCanApprove": true, "ledger": {"999": {"expectedSha": "abc"}}, "approvalsSoFar": 0, "maxApprovals": 3, "testMode": true },
-  "expect": { "outcome": "pass", "signals": ["delegated-approve"] }
-}

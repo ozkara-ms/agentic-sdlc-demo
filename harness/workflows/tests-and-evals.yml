@@ -1,0 +1,181 @@
+# Tests & Evals — REAL verification (replaces the EXAMPLE echo placeholders).
+#
+# Lives in the demo source at harness/workflows/. At Tier-2 instantiation (D7) this file
+# is copied to the dedicated repo's .github/workflows/tests-and-evals.yml, where the sample
+# app is the repo ROOT and the scripts live at ci/scripts/. Make the `tests`, `evals`, and
+# `path-scope` jobs REQUIRED status checks in the target repo's ruleset to actually gate merges.
+#
+# Verification = Tests (deterministic) + Evals (a LAYERED PATTERN run as Actions jobs — NOT a
+# native GitHub product) + a custom path-scope gate. The deterministic tests + eval-rubric are
+# the REQUIRED gate; the LM-judge is OPTIONAL and skips safely on fork PRs (no secret in scope).
+#
+# Rubber-duck fixes folded:
+#   R4 — a work-unit PR (labelled `agentic-work-unit` or a `copilot/*` branch) MUST carry
+#        .agent/unit.json. If it is missing, trajectory + path-scope FAIL (no more skip-green).
+#   R5 — the rate-limit acceptance rubric runs whenever the unit's CONTRACT declares it
+#        (.agent/unit.json `evals` contains `rate-limit-429`), NOT when a filename happens to
+#        exist. A unit that claims the limiter but doesn't limit → eval RED. Scenario-driven:
+#        route/threshold/method come from unit.json so a second scenario reuses the same job.
+#   R7 — required checks also trigger on `merge_group`, or the merge queue stalls forever.
+name: Tests & Evals
+
+on:
+  pull_request:
+    branches: [ master ]
+  merge_group:            # R7 — required checks must report on the merge-queue ref too
+
+concurrency:
+  group: tests-evals-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.suite }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [unit, e2e]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Run ${{ matrix.suite }} tests
+        run: npm run test:${{ matrix.suite }}
+
+  evals:
+    name: Evals (trajectory + rubric)   # LAYERED PATTERN — not a native GitHub product
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      # Diff base works for BOTH pull_request and merge_group (R7) so the queue can pass.
+      - name: Compute diff base + work-unit signal
+        id: ctx
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "merge_group" ]; then
+            echo "base=$MERGE_BASE_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=origin/$BASE_REF" >> "$GITHUB_OUTPUT"
+          fi
+          # A work-unit PR is one a Dev-fleet agent authored: labelled agentic-work-unit OR a copilot/* branch.
+          WU=false
+          case ",$PR_LABELS," in *",agentic-work-unit,"*) WU=true;; esac
+          case "$HEAD_REF" in copilot/*) WU=true;; esac
+          echo "work_unit=$WU" >> "$GITHUB_OUTPUT"
+          echo "work-unit PR: $WU  (labels=$PR_LABELS head=$HEAD_REF)"
+
+      # Trajectory eval — did the agent touch its declared files and add the required test?
+      # R4: for a work-unit PR, .agent/unit.json is REQUIRED — its absence FAILS the gate.
+      - name: Trajectory eval
+        env:
+          BASE: ${{ steps.ctx.outputs.base }}
+          WORK_UNIT: ${{ steps.ctx.outputs.work_unit }}
+        run: |
+          if [ ! -f .agent/unit.json ]; then
+            if [ "$WORK_UNIT" = "true" ]; then
+              echo "::error::work-unit PR is missing .agent/unit.json (declaredPaths + requiredTest). A Dev-fleet PR MUST declare its scope."
+              exit 1
+            fi
+            echo "no .agent/unit.json and not a work-unit PR — trajectory eval not applicable"
+            exit 0
+          fi
+          CHANGED="$(git diff --name-only "$BASE"...HEAD | paste -sd, -)"
+          DECLARED="$(jq -r '.declaredPaths | join(",")' .agent/unit.json)"
+          REQTEST="$(jq -r '.requiredTest // empty' .agent/unit.json)"
+          node ci/scripts/trajectory-check.mjs --declared "$DECLARED" --changed "$CHANGED" ${REQTEST:+--required-test "$REQTEST"}
+
+      # Output rubric — deterministic acceptance eval, run by the unit's CONTRACT (R5), not by filename.
+      # Scenario-driven: route/threshold/method are read from unit.json so another scenario reuses this job.
+      - name: Output rubric (acceptance eval by declared contract)
+        run: |
+          if [ -f .agent/unit.json ]; then
+            EVALS="$(jq -r '.evals // [] | join(",")' .agent/unit.json)"
+            ROUTE="$(jq -r '.evalRoute // "/healthz"' .agent/unit.json)"
+            MAX="$(jq -r '.evalMax // 3' .agent/unit.json)"
+            METHOD="$(jq -r '.evalMethod // "GET"' .agent/unit.json)"
+          else
+            EVALS=""; ROUTE="/healthz"; MAX=3; METHOD="GET"
+          fi
+          case ",$EVALS," in
+            *",rate-limit-429,"*)
+              echo "unit CONTRACT declares rate-limit-429 — running the rubric (must PASS; no skip-green)"
+              node ci/scripts/eval-rubric.mjs --app dist/app.js --route "$ROUTE" --max "$MAX" --method "$METHOD"
+              ;;
+            *)
+              echo "rate-limit rubric: this unit does not declare rate-limit-429 in its contract — not applicable"
+              ;;
+          esac
+
+      # LM-judge — OPTIONAL / non-required. Skips safely without a model token (e.g. fork PRs).
+      - name: LM-judge (optional, advisory)
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node ci/scripts/lm-judge.mjs
+
+  path-scope:
+    name: Path-scope (fleet lane check)   # custom 🟦 required job — NOT a GitHub primitive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Compute diff base + work-unit signal
+        id: ctx
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "merge_group" ]; then
+            echo "base=$MERGE_BASE_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=origin/$BASE_REF" >> "$GITHUB_OUTPUT"
+          fi
+          WU=false
+          case ",$PR_LABELS," in *",agentic-work-unit,"*) WU=true;; esac
+          case "$HEAD_REF" in copilot/*) WU=true;; esac
+          echo "work_unit=$WU" >> "$GITHUB_OUTPUT"
+      - name: Changed files must stay within the unit's declared paths
+        env:
+          BASE: ${{ steps.ctx.outputs.base }}
+          WORK_UNIT: ${{ steps.ctx.outputs.work_unit }}
+        run: |
+          if [ ! -f .agent/unit.json ]; then
+            if [ "$WORK_UNIT" = "true" ]; then
+              echo "::error::work-unit PR is missing .agent/unit.json — cannot verify it stayed in its lane."
+              exit 1
+            fi
+            echo "no .agent/unit.json and not a work-unit PR — path-scope not applicable"
+            exit 0
+          fi
+          CHANGED="$(git diff --name-only "$BASE"...HEAD | paste -sd, -)"
+          DECLARED="$(jq -r '.declaredPaths | join(",")' .agent/unit.json)"
+          node ci/scripts/path-scope-check.mjs --declared "$DECLARED" --changed "$CHANGED"

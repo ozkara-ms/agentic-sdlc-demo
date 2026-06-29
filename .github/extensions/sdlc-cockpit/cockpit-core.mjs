@@ -1,7 +1,7 @@
 // Agentic SDLC Cockpit — core (no SDK import, so it is unit-testable in isolation).
 // Owns: the demo model (stages/agents/story/units), per-instance state, a loopback
 // HTTP server that serves the dashboard, a LIVE runner that shells out to the real
-// `demos/validate/run.mjs --json`, and a REPLAY snapshot (the project's pre-baked
+// `_internal/harness-selftest/validate/run.mjs --json`, and a REPLAY snapshot (the project's pre-baked
 // fallback). One Cockpit instance per open canvas.
 
 import { createServer } from "node:http";
@@ -16,7 +16,7 @@ const WEBUI = join(HERE, "webui.html");
 function findRepoRoot(start) {
   let dir = start;
   for (let i = 0; i < 8; i += 1) {
-    if (existsSync(join(dir, "demos", "validate", "run.mjs"))) return dir;
+    if (existsSync(join(dir, "_internal", "harness-selftest", "validate", "run.mjs"))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
@@ -24,7 +24,7 @@ function findRepoRoot(start) {
   return start;
 }
 const ROOT = findRepoRoot(HERE);
-const VALIDATOR = join(ROOT, "demos", "validate", "run.mjs");
+const VALIDATOR = join(ROOT, "_internal", "harness-selftest", "validate", "run.mjs");
 
 // Inside the CLI extension host, process.execPath is the `copilot` binary, NOT
 // node — so we must resolve a real node executable to run the validator script.

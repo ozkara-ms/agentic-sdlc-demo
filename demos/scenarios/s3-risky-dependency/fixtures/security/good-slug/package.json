@@ -1,9 +1,0 @@
-{
-  "name": "good-slug-deps-fixture",
-  "version": "0.0.0",
-  "private": true,
-  "_comment": "POSITIVE data for S3 — a real, pinned slug helper (nanoid) with a SIBLING package-lock.json that resolves the caret range to an exact, integrity-tracked version. This is the secure Node pinning pattern, so pin-check stays GREEN. Lives in its own subdir so its lockfile does NOT cover the negative manifests one level up.",
-  "dependencies": {
-    "nanoid": "^5.0.7"
-  }
-}

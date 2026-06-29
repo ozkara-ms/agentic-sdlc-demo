@@ -1,7 +1,0 @@
-{
-  "agent": "quality-test", "case": "positive-good", "polarity": "positive",
-  "enforcement": "ci-job", "driver": "eval-rubric",
-  "title": "Good API-key guard: missing key → 401 + JSON; healthz open → passes the auth contract",
-  "input": { "appVariant": "good" },
-  "expect": { "outcome": "pass", "signals": [] }
-}

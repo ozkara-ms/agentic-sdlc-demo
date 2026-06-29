@@ -1,7 +1,0 @@
-{
-  "agent": "auto-approve", "case": "positive-dryrun-would-approve", "polarity": "positive",
-  "enforcement": "local-assertion", "driver": "auto-approve",
-  "title": "Preconditions hold but no AUTO_APPROVE_TEST_MODE → DRY-RUN would-approve (no live click)",
-  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "changedFiles": ["src/app.ts"], "branch": "copilot/u1", "environment": "production", "currentUserCanApprove": true, "ledger": {"999": {"expectedSha": "abc"}}, "maxApprovals": 3, "testMode": false },
-  "expect": { "outcome": "pass", "signals": ["dry-run", "would-approve"] }
-}

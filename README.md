@@ -17,7 +17,8 @@ Scaffolded 2026-06-18 from `project-template`. Not started — the first working
 | Path | Description |
 |------|-------------|
 | `AGENT.md` | Main AI instructions — overview, demo concept, deliverables, how-to-verify, first-session plan |
-| `demos/` | Per-stage demo flows + the end-to-end script |
+| `harness/` | The reusable, published agent-harness template (agents · prompts · skills · checks · workflows) |
+| `_internal/harness-selftest/` | Local-only self-test rig (sample-app · scenarios · validator) — gitignored |
 | `docs/` | Talking points, setup, fallback plan, the narrative |
 | `inputs/` *(first session)* | Seed artifacts: sample requirement / meeting notes / action item |
 | `app/` *(first session)* | The sample application the agent evolves during the demo |

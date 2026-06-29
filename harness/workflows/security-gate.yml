@@ -1,0 +1,60 @@
+# Security Gate — REAL verification (replaces the EXAMPLE echo placeholder).
+#
+# Lives in the demo source at harness/workflows/. At Tier-2 instantiation (D7) this file is
+# copied to the dedicated repo's .github/workflows/security-gate.yml (sample app at repo ROOT,
+# scripts at ci/scripts/). Make these jobs REQUIRED status checks in the target repo's ruleset.
+#
+# dependency-review + CodeQL are NATIVE GitHub capabilities (GHAS, 🟩). The supply-chain
+# pin/slopsquat job is CUSTOM logic (🟦) made required — not a GitHub primitive.
+name: Security Gate
+
+on:
+  pull_request:
+    branches: [ master ]
+  merge_group:            # R7 — required checks must report on the merge-queue ref too
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Dependency review (supply-chain)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  codeql:
+    name: CodeQL (code scanning)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ "javascript-typescript" ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  supply-chain-check:
+    name: Hallucinated-dependency / slopsquatting check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify dependencies are real and reproducibly pinned
+        run: node ci/scripts/pin-check.mjs --package package.json

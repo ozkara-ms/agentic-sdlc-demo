@@ -1,5 +1,0 @@
-{
-  "title": "Malformed plans — the orchestrator's structural guards must fire on ANY plan shape",
-  "intent": "Feed the orchestrator four classically-broken plans (dependency cycle, duplicate unit id, an ordered unit mislabeled parallel-safe, two parallel-safe units sharing a path) plus the approval gate, and prove each is caught.",
-  "note": "Cheap pure-structural breadth for orchestrator/validatePlan (cycle + duplicate-id detection) and the A/B parallelization rules, plus decideDispatch's approval gate (fan-out vs refusal). Uses the plan-lint and dispatch drivers only — no app build, no request oracle. This is the scenario that proves the dispatcher's guards are content-general: they reason about DAG shape, not about rate limiting."
-}

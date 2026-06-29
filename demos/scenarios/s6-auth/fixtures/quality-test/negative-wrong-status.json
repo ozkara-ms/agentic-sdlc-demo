@@ -1,7 +1,0 @@
-{
-  "agent": "quality-test", "case": "negative-wrong-status", "polarity": "negative",
-  "enforcement": "ci-job", "driver": "eval-rubric",
-  "title": "Wrong status (403 not 401) → caught (status-exactness, not just some block)",
-  "input": { "appVariant": "wrong-status" },
-  "expect": { "outcome": "blocked", "signals": ["missing-key-not-rejected"] }
-}

@@ -1,0 +1,91 @@
+# Plan-Lint — the issue-native Planning / Rubber-Duck gate (R3).
+#
+# Lives in the demo source at harness/workflows/. At Tier-2 instantiation it is copied to the live
+# repo's .github/workflows/plan-lint.yml, where the scripts are at ci/scripts/ and the dispatcher at
+# orchestrator/ (repo root).
+#
+# Enforcement: 🟦 LAYERED orchestration — NOT a native required status check. An `on: issues` workflow
+# can't attach a check-run to a commit/PR, so the gate here is the verdict COMMENT + this run's pass/fail.
+# A human reads it before adding `plan-approved`; the dispatcher (orchestrator/cli.mjs) then refuses to
+# fan out an unapproved plan. This is the issue-native half of the planning gate the rubber-duck found
+# missing (R3): the deterministic plan-lint now runs on the real GitHub Issue, not just on JSON fixtures.
+#
+# Triggers: a tracking/PRD or work-unit issue (labelled `agentic-plan` / `agentic-work-unit`) opened or
+# edited, OR a `/plan-lint` comment. Secrets: NONE (GITHUB_TOKEN only).
+name: Plan-Lint
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write          # to post the verdict comment
+
+jobs:
+  plan-lint:
+    name: Lint the plan on the issue
+    if: >
+      (github.event_name == 'issues' &&
+        (contains(github.event.issue.labels.*.name, 'agentic-plan') ||
+         contains(github.event.issue.labels.*.name, 'agentic-work-unit'))) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/plan-lint'))
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: Extract the issue body + title from the event payload
+        run: |
+          jq -r '.issue.body'  "$GITHUB_EVENT_PATH" > issue-body.md
+          jq -r '.issue.title' "$GITHUB_EVENT_PATH" > issue-title.txt
+          echo "Issue #$ISSUE: $(cat issue-title.txt)"
+
+      - name: Parse issue → plan JSON
+        run: |
+          node ci/scripts/issue-to-plan.mjs \
+            --body-file issue-body.md \
+            --title "$(cat issue-title.txt)" \
+            --out plan.json
+          echo '----- parsed plan -----'; cat plan.json
+
+      - name: Run plan-lint (deterministic artifact contract)
+        id: lint
+        run: |
+          set +e
+          node ci/scripts/plan-lint.mjs --plan plan.json --json > result.json
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+          cat result.json
+
+      - name: Comment the verdict on the issue
+        run: |
+          PASS=$(jq -r '.pass' result.json)
+          if [ "$PASS" = "true" ]; then
+            HEADER="✅ **plan-lint: PASS** — artifact contract holds (well-formed DAG, safe parallelization)."
+          else
+            HEADER="❌ **plan-lint: CAUGHT** — the plan violates the artifact contract. Fix and re-edit the issue."
+          fi
+          {
+            echo "$HEADER"
+            echo ""
+            echo "_Enforcement: 🟦 layered orchestration (deterministic plan-lint on the issue) — not a native required check. The dispatcher refuses to fan out until \`plan-approved\` is added by a human._"
+            VIOLS=$(jq -r '.violations | length' result.json)
+            if [ "$VIOLS" != "0" ]; then
+              echo ""
+              echo "**Violations:**"
+              jq -r '.violations[] | "- [\(.rule)] `\(.signal)` — \(.detail)"' result.json
+            fi
+            echo ""
+            echo "Units: $(jq -rc '.units' result.json)"
+          } > comment.md
+          gh issue comment "$ISSUE" --body-file comment.md
+
+      - name: Reflect the verdict in the run status
+        run: exit ${{ steps.lint.outputs.code }}

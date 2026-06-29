@@ -1,5 +1,0 @@
-{
-  "title": "Add a /healthz readiness detail + document it — docs-coupling, path-scope & trajectory must stay content-general",
-  "intent": "Add a richer /healthz readiness payload (uptime + store size) to the URL-shortener and document it.",
-  "note": "Stresses code-review/doc-coupling, dev-fleet/path-scope, and dev-fleet/trajectory on a DIFFERENT feature than S1 (a /healthz refactor, not rate limiting). Proves those gates enforce the content-general rule 'arch changed ⇒ docs+test expected; stay in your lane', with no rate-limit-specific knowledge. Uses the doc-coupling / path-scope / trajectory drivers; no request oracle."
-}

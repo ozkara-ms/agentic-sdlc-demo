@@ -1,6 +1,0 @@
-{
-  "agent": "auto-approve", "case": "negative-branch-not-allowed", "polarity": "negative",
-  "enforcement": "local-assertion", "driver": "auto-approve", "title": "Refuse: branch not in allowlisted prefixes",
-  "input": { "repo": "<your-org>/agentic-sdlc-demo-live", "runId": "999", "headSha": "abc", "prLabels": ["loop4-test"], "branch": "random/hack", "ledger": {"999": {"expectedSha": "abc"}}, "testMode": true },
-  "expect": { "outcome": "blocked", "signals": ["branch-not-allowed"] }
-}

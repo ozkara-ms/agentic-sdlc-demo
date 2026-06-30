@@ -27,29 +27,46 @@ label-conditioned workflow result. Never claim that GitHub natively blocks pre-c
 Two decisions at every step: **which** specialist, and **which delegation primitive**. The primitive choice
 is load-bearing — it determines whether you can coordinate reliably.
 
-**Primitive rule:**
-- **Default = run the specialist as a SUBAGENT** (the Task tool). A subagent runs in its own context and
-  **returns its result to you synchronously** — reliable coordination, nothing to track, works at any nesting
-  level. Use it for every sequential, judgment-heavy stage: bootstrap, planning, validation (rubber-duck),
-  quality-test, code-review, security-compliance, and the deploy go/no-go.
-- **Spawn a bounded peer SESSION** (`create_session`) **only** for the **parallel implementation fan-out** —
-  when ≥2 plan-approved, disjoint-path units must run **at the same time**, each needing its **own worktree →
-  branch → PR** (you cannot run two file-editing agents on one working tree safely). Cap live sessions at the
-  plan's `concurrencyCap` (2–3) and apply the pull-observable + wake + whole-fleet-reconcile discipline below
-  — a spawned session reports **push-only** and you have **no tool to pull its status** (the F8 tax).
-- **Single / sequential implementation** → a **dev-fleet SUBAGENT** on a unit branch is simpler and more
-  reliable than a spawned session. Reach for spawn only when genuine concurrency is the point.
+**Primitive rule (implementation has THREE options — prefer in this order):**
+- **Default for sequential/judgment stages = run the specialist as a SUBAGENT** (the Task tool). A subagent
+  runs in its own context and **returns its result to you synchronously** — reliable coordination, nothing to
+  track, works at any nesting level. Use it for: bootstrap, planning, validation (rubber-duck), quality-test,
+  code-review, security-compliance, and the deploy go/no-go.
+- **For IMPLEMENTATION units, prefer in this order:**
+  1. **GitHub Copilot CLOUD AGENT — assign the work-unit Issue to `@copilot`** (`gh issue edit <n> --add-assignee
+     copilot` / the agents panel). This is the DEFAULT implementer once Issues exist and the repo is gated:
+     the cloud agent runs in its OWN GitHub-Actions environment, pushes a branch, opens a **gated PR**, and
+     runs the checks — **pull-observable by design** (the branch/PR/checks *are* the status bus) with **true
+     parallelism** and **no local-tooling dependency**. It natively dissolves F8 + F7.
+  2. **dev-fleet SUBAGENT** — the orchestrator runs the unit inline and **does the git/gh itself** (commit on a
+     unit branch, push, open the PR). Reliable fallback for **local/offline** runs or when the cloud agent
+     isn't available. Loses cross-unit parallelism, which rarely matters for small plans.
+  3. **Local peer SESSION (`create_session`)** — LAST resort, only when you specifically need local worktrees
+     AND you have CONFIRMED the spawned sessions actually have shell/git/gh tools. **By default they DO NOT**
+     (a spawned session is often edit-only: it can write files but cannot run tests, push, open a PR, or send a
+     wake — see QF3). An edit-only spawn cannot complete the pull-observable contract, so **do not use local
+     spawn for implementation unless you have verified its tooling.** If you ever do spawn, cap at the plan's
+     `concurrencyCap` and apply the pull-observable + wake + whole-fleet-reconcile discipline below.
 
-> Why: subagents **return**; spawned sessions **push** (and you have no pull-status tool). Pay spawn's
-> coordination tax only where real parallelism + per-unit worktrees/PRs are the actual payoff; everywhere
-> else the synchronous return of a subagent is strictly more reliable.
+> Why: subagents **return**; the cloud agent is **pull-observable on GitHub**; local spawned sessions only
+> **push** (and you have no pull-status tool) AND may be **edit-only** (can't push/PR/test). So for
+> implementation, **Copilot cloud agent (assign the Issue) is the best primitive** — it gives the parallelism
+> that was the only reason to spawn, plus reliable GitHub-native observability and gating. Local peer-spawn is
+> **dominated**: prefer it last, and only with verified git/gh tooling.
+
+> **If a spawned unit reports `blocked` on missing tooling** (no shell/git/gh to run tests / push / open a PR /
+> wake — the QF3 case), do NOT silent-wait or re-spawn. Either: (a) **re-route that unit to the cloud agent**
+> (assign its Issue to `@copilot`), or (b) **take over yourself** — you can read the unit's worktree, so run
+> its tests, commit/push its branch, and open the gated PR on its behalf, then continue. Never leave a unit
+> stuck because its session can't reach GitHub.
 
 **Routing (which specialist):**
 - **Missing environment / project-zero** (no `.harness/project.json`) → **deployment (DevOps)** *subagent* → bootstrap.
 - **Have an approved env but no plan** → **planning** *subagent* → decompose the intent.
 - **Have a plan, not yet validated** → **rubber-duck** *subagent*.
-- **Plan approved** → **dev-fleet**: bounded *spawned sessions* (one per concurrent, disjoint-path unit) for a
-  parallel wave; a single/sequential unit → dev-fleet *subagent*.
+- **Plan approved + Issues created** → implement each ready unit by **assigning its Issue to the Copilot cloud
+  agent** (preferred), or a **dev-fleet subagent** (local/offline fallback). Local peer-spawn only with verified
+  git/gh tooling.
 - **A unit is implemented** → **quality-test** *subagent*; then **code-review** + **security-compliance** *subagents*.
 - **Integrated + approved for release** → **deployment** *subagent*.
 Recompute the next agent after each result. Never run a stage whose inputs aren't ready.
@@ -93,10 +110,12 @@ unit PR is gated. The phases:
 - **P2 · Materialize the plan as Issues.** Run the **`plan-to-issues`** skill → it creates the tracking
   Issue + one **work-unit** child Issue per approved unit, dependency-linked, and writes the unit→issue
   map into `.harness/dispatch.json`. (This is the step the first run skipped — it stayed in markdown.)
-- **P3 · Dispatch from Issues (gated).** For each ready unit, **assign its Issue** to an implementer — a
-  **dev-fleet** session/subagent (per the delegation rule) or **GitHub Copilot cloud agent** (`gh issue
-  edit <n> --add-assignee` / the agents panel) — which opens a **linked, gated PR** that closes the Issue
-  on merge. Then test → review → integrate → deploy. Poll Issues/PRs/checks (pull-observable, F8).
+- **P3 · Dispatch from Issues (gated).** For each ready unit, implement it via the **Copilot cloud agent**
+  (assign its Issue to `@copilot` — preferred: GitHub-hosted, pull-observable, gated PR) or a **dev-fleet
+  subagent** (local/offline fallback, orchestrator does git/gh). Avoid local peer-spawn for implementation
+  unless you've verified the spawned session has shell/git/gh tools (by default it's edit-only — QF3). The
+  implementer opens a **linked, gated PR** that closes the Issue on merge. Then test → review → integrate →
+  deploy. Poll Issues/PRs/checks + `.harness/units/<id>.json` (pull-observable, F8).
 
 > **Issues are the work intake — but only after local validation + approval AND `verify-gates` READY.**
 > Never create work Issues from an unvalidated plan or against an unenforced repo.

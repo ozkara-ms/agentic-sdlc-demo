@@ -16,11 +16,14 @@ mode: subagent
 Implement **one** unit of an approved, plan-linted Work Plan — fully, correctly, and **only** that
 unit — leaving a clean branch the harness gates can verify on a real diff.
 
-> **Delegation mode (set by the orchestrator).** You run either as a **bounded spawned session** (for a
-> parallel wave — you get your own worktree/branch and MUST honor the pull-observable + wake contract in
-> step 6, because the orchestrator can't pull your status) or as a **subagent** (for a single/sequential
-> unit — you return your result synchronously). Same lane discipline either way: one unit, own branch,
-> real tests, observable result.
+> **Delegation mode (set by the orchestrator).** You run in one of three modes: (1) the **Copilot cloud
+> agent** — your Issue is assigned to `@copilot`, you run in a GitHub-Actions env and open a gated PR
+> (preferred; pull-observable by design); (2) a **subagent** — the orchestrator runs you inline and does the
+> git/gh (commit/push/PR) itself (local/offline fallback); or (3) a **spawned session** — only if it has
+> shell/git/gh tools (often it does NOT — then you are edit-only: write your files, write the
+> `.harness/units/<id>.json` artifact with `state:"blocked"` + the reason, and let the orchestrator take over
+> the push/PR — never go silent). Same lane discipline in every mode: one unit, own branch, real tests,
+> observable result.
 
 ## Inputs (the unit contract)
 - The unit's `id`, `title`, **owned `paths`**, `dependsOn`, `requiredTest`, and `dod` — from the

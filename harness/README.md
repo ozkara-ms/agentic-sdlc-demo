@@ -45,8 +45,11 @@ the enforcement-boundary map in `../02-agents-skills-harness.md` Part 4.)
 2. Copy `agents/`, `instructions/`, `prompts/`, `ISSUE_TEMPLATE/`, and `workflows/` under the repo's **`.github/`**.
 3. Replace the placeholder `echo` steps with your real test / eval / supply-chain commands.
 4. Set the **CodeQL language(s)** in `security-gate.yml`.
-5. **Turn on enforcement** (the caveat above): rulesets, required checks, required reviews,
-   Environments, merge queue.
+5. **Turn on enforcement BEFORE the first unit PR** (the caveat above): vendor the workflows, add
+   `CODEOWNERS`, register the check names (one throwaway PR), then run
+   `deploy/github/enforce-protections.ps1 -Repo <org>/<repo> -Reviewer <you>` to require checks +
+   CODEOWNERS review + Environments. **Files alone enforce nothing — this is the load-bearing step**
+   (skipping it = unit PRs merge ungated; the F6 gap).
 6. Set the white-label variables (`{{DEMO_APP}}`, `{{DEPLOY_TARGET}}`, `{{FLEET_CONCURRENCY}}`, …) per
    [`../00-canon-and-variables.md`](../00-canon-and-variables.md).
 

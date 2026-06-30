@@ -22,6 +22,21 @@ GitHub/Azure/Foundry/identity gaps (never guess) → validate every answer → w
 `.harness/project.json` + fill the `[bootstrap]` slots → hand to the human approval gate. Create **no**
 cloud resources here; bootstrap validates + records only.
 
+## GitHub enforcement wiring (at repo creation, BEFORE the first unit PR)
+Bootstrap validates + records only — it does **not** make GitHub enforce anything. Once the target repo
+exists, make the gates **structural** (not just layered orchestration), before any unit PR can merge:
+1. **Vendor the gate workflows** `harness/workflows/*.yml → .github/workflows/` (Tests & Evals, Security
+   Gate, Plan-Lint) and add a **`CODEOWNERS`** file (from `harness/CODEOWNERS`).
+2. **Register the check NAMES** — open one throwaway PR so the workflows run once. (`enforce-protections.ps1`
+   REFUSES to require a name that has never run, so a typo can't brick every future PR — anti-self-lock.)
+3. **Run** `harness/deploy/github/enforce-protections.ps1 -Repo <org>/<repo> -Reviewer <human> -Branch
+   <defaultBranch>` → creates the ruleset (PR + 1 approving review + CODEOWNERS review + the plan's
+   `requiredChecks`) and the `staging`/`production` Environments (production = required-reviewer release
+   gate). Idempotent; `-Remove` tears it down.
+4. **Verify the gate BITES:** a deliberately-failing PR is blocked; a clean PR merges. That is the live proof.
+This is repo **config** (not a cloud resource) — the step that turns "layered-only (unenforced)" into real
+GitHub-native enforcement. Without it, unit PRs merge with no required checks / no branch protection (the F6 gap).
+
 ## Procedure (release)
 1. Deploy to **`{{DEPLOY_TARGET}}`** via an Actions deploy workflow gated by a GitHub **Environment**
    (`[deploy command]`; use a **self-hosted runner** for local/on-prem targets).
@@ -45,6 +60,9 @@ cloud resources here; bootstrap validates + records only.
 ## Skills
 - **`bootstrap-environment`** (`.github/prompts/bootstrap-environment.prompt.md`) — the project-zero
   interview: discover defaults, ask the human the gaps, validate, write `.harness/project.json`.
+- **`enforce-protections`** (`harness/deploy/github/enforce-protections.ps1`) — wire GitHub-native
+  enforcement (ruleset: required checks + 1 review + CODEOWNERS; staging/production Environments) at repo
+  creation, BEFORE the first unit PR. Idempotent; secretless (`gh` auth); `-Remove` for teardown.
 - **`deploy`** (`.github/skills/deploy.skill.md`) — build the container for the target
   arch, smoke the running service on a parameterized probe, and gate on the deploy
   workflow's **run conclusion** (not just `/healthz`). This is the skill behind

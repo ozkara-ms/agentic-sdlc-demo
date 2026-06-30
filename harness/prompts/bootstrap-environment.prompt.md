@@ -50,6 +50,12 @@ deploy stage, human-gated.
    human to approve. Implementation/planning does **not** start until `project.json` exists and is
    approved.
 
+> **After approval — wire enforcement before the first unit PR.** Bootstrap RECORDS `requiredChecks` but
+> makes GitHub enforce nothing. The next DevOps step (at repo creation) vendors the workflows + `CODEOWNERS`
+> and runs `harness/deploy/github/enforce-protections.ps1` so those checks + CODEOWNERS review are REQUIRED
+> on the default branch — see the deployment agent's **"GitHub enforcement wiring"** section. Until then the
+> run is **layered-only (unenforced)**: unit PRs can merge with no required checks (the F6 gap).
+
 ## `.harness/project.json` — the environment contract (schema)
 
 ```jsonc

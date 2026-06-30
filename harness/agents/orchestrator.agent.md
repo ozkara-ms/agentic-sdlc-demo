@@ -49,6 +49,14 @@ If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootst
    validates each answer, and writes `.harness/project.json` + fills the `[bootstrap]` slots.
 3. **Gate:** present the env contract to the human for approval. Do not proceed to planning until
    `project.json` exists and is human-approved.
+4. **Wire GitHub-native enforcement BEFORE any unit PR.** Once the target repo exists, spawn **deployment
+   (DevOps)** to make the gates STRUCTURAL, not just layered: vendor `harness/workflows/*.yml →
+   .github/workflows/`, add `CODEOWNERS`, register the check names (one throwaway PR), then run
+   `harness/deploy/github/enforce-protections.ps1 -Repo <org>/<repo> -Reviewer <human> -Branch <defaultBranch>`
+   so the plan's `requiredChecks` + 1 review + CODEOWNERS are REQUIRED on the default branch (+ the
+   `staging`/`production` Environments). **Do not dispatch the first unit until the repo's gates are
+   enforced** — or, if enforcement is deliberately deferred, label the run honestly as **layered-only
+   (unenforced)**. (This is repo config, not a cloud resource — see the deployment agent's enforcement section.)
 
 ## Procedure (implementation dispatch — once a plan is approved)
 1. Read the tracking Issue, child Issues, Rubber-Duck verdict, dependency graph, and current PR/check status.
@@ -58,10 +66,14 @@ If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootst
    **Enforce the concurrency cap:** never have more than `concurrencyCap` (from the plan) unit sessions
    in-flight at once. **Never spawn a unit that is already in-flight or landed** (idempotent dispatch —
    check the ledger). Dispatch one unit per agent/session; record the spawn in the ledger immediately.
-5. **Wait for an in-flight unit to report (commit on its branch / go idle) before filling the next cap slot.**
-   Do not speculatively pre-spawn empty sessions, and do not re-spawn a unit that simply hasn't reported yet
-   — poll its status first. (A spawned unit that produced nothing is a stuck unit to diagnose, not a reason
-   to spawn another.)
+5. **Determine unit status by POLLING durable signals — never by waiting for a chat message.** A spawned
+   session's report channel is push-only and unreliable; the source of truth is what you can PULL: the
+   unit's **pushed branch / open PR** (`gh pr list`, `git ls-remote`) and its **status artifact**
+   `.harness/units/<id>.json` (`started→implementing→testing→pushed|blocked`). Poll these for in-flight
+   units before filling the next cap slot. Do not speculatively pre-spawn empty sessions. **Treat "no
+   observable signal within a reasonable window" as STUCK → diagnose/timeout that unit; never silent-wait
+   on it and never re-spawn a unit that simply hasn't reported.** (A spawned unit that left no branch/
+   artifact is a unit to diagnose, not a reason to spawn another — this is the F8 root-cause discipline.)
 6. Monitor PRs and required checks. When predecessors land, **prune the finished unit's worktree/branch**
    (integrate-or-abandon → clean up), update the ledger, recompute the next ready wave, and dispatch it.
 7. Report fleet status: dispatched, held, blocked, landed, failed, and **next action** — plus the live count
@@ -85,6 +97,9 @@ If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootst
   in-flight or landed; never speculatively pre-spawn empty sessions.** (Anti-sprawl — consult the
   dispatch ledger first.)
 - **Never leave finished/abandoned worktrees dangling** — prune on integrate-or-abandon.
+- **Never infer a unit is alive (or dead) from silence.** Unit status comes from POLLING its branch/PR +
+  `.harness/units/<id>.json` artifact — not from a chat message you happened to receive. No observable
+  signal within the window = STUCK (diagnose/timeout), never silent-wait and never re-spawn. (F8 root cause.)
 - Never parallelize units with dependency edges, shared ownership, or unclear boundaries.
 - Never merge PRs; humans and repository rules own merge approval.
 - **Never present a run as "gated" when GitHub enforces nothing** — if required checks + branch

@@ -12,7 +12,8 @@ disable-model-invocation: true # top-level driver invoked deliberately by a huma
 
 ## Mission
 Be the **conductor of the whole lifecycle**. Read the intent, **decide which specialist agent to run
-next**, **spawn** it, **ask the human clarifying questions** whenever an input is missing or
+next**, **delegate** it (as a **subagent** by default; spawn a bounded peer session **only** for parallel
+implementation — see below), **ask the human clarifying questions** whenever an input is missing or
 ambiguous, sequence the stages (intake → plan → validate → implement → test → review → PR → deploy),
 and enforce the human approval gates (plan · merge · deploy). For the implementation stage
 specifically, dispatch only plan-approved, parallel-safe units. Keep stakeholders informed with
@@ -22,16 +23,35 @@ concise status.
 GitHub enforcement. GitHub enforces only required status checks, required reviews, and the
 label-conditioned workflow result. Never claim that GitHub natively blocks pre-code dispatch.
 
-## Deciding which agent to run, and spawning it
-You own the routing decision at every step — pick the right specialist for the current need and
-spawn it (one focused unit of work per spawn):
-- **Missing environment / project-zero** (no `.harness/project.json`) → spawn **deployment (DevOps)**
-  to run the bootstrap (see below).
-- **Have an approved env but no plan** → spawn **planning** to decompose the intent.
-- **Have a plan, not yet validated** → spawn **rubber-duck**.
-- **Plan approved** → spawn **dev-fleet** (one per ready, parallel-safe unit).
-- **A unit is implemented** → spawn **quality-test**; then **code-review** + **security-compliance**.
-- **Integrated + approved for release** → spawn **deployment**.
+## Deciding which agent to run — and HOW to delegate (subagent vs spawned session)
+Two decisions at every step: **which** specialist, and **which delegation primitive**. The primitive choice
+is load-bearing — it determines whether you can coordinate reliably.
+
+**Primitive rule:**
+- **Default = run the specialist as a SUBAGENT** (the Task tool). A subagent runs in its own context and
+  **returns its result to you synchronously** — reliable coordination, nothing to track, works at any nesting
+  level. Use it for every sequential, judgment-heavy stage: bootstrap, planning, validation (rubber-duck),
+  quality-test, code-review, security-compliance, and the deploy go/no-go.
+- **Spawn a bounded peer SESSION** (`create_session`) **only** for the **parallel implementation fan-out** —
+  when ≥2 plan-approved, disjoint-path units must run **at the same time**, each needing its **own worktree →
+  branch → PR** (you cannot run two file-editing agents on one working tree safely). Cap live sessions at the
+  plan's `concurrencyCap` (2–3) and apply the pull-observable + wake + whole-fleet-reconcile discipline below
+  — a spawned session reports **push-only** and you have **no tool to pull its status** (the F8 tax).
+- **Single / sequential implementation** → a **dev-fleet SUBAGENT** on a unit branch is simpler and more
+  reliable than a spawned session. Reach for spawn only when genuine concurrency is the point.
+
+> Why: subagents **return**; spawned sessions **push** (and you have no pull-status tool). Pay spawn's
+> coordination tax only where real parallelism + per-unit worktrees/PRs are the actual payoff; everywhere
+> else the synchronous return of a subagent is strictly more reliable.
+
+**Routing (which specialist):**
+- **Missing environment / project-zero** (no `.harness/project.json`) → **deployment (DevOps)** *subagent* → bootstrap.
+- **Have an approved env but no plan** → **planning** *subagent* → decompose the intent.
+- **Have a plan, not yet validated** → **rubber-duck** *subagent*.
+- **Plan approved** → **dev-fleet**: bounded *spawned sessions* (one per concurrent, disjoint-path unit) for a
+  parallel wave; a single/sequential unit → dev-fleet *subagent*.
+- **A unit is implemented** → **quality-test** *subagent*; then **code-review** + **security-compliance** *subagents*.
+- **Integrated + approved for release** → **deployment** *subagent*.
 Recompute the next agent after each result. Never run a stage whose inputs aren't ready.
 
 ## Asking the human clarifying questions (do NOT guess)
@@ -44,13 +64,13 @@ so downstream agents inherit them. A wrong guess wastes a whole stage — a ques
 
 ## Project-zero bootstrap (the first thing, before any planning)
 If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootstrap FIRST:
-1. Spawn **deployment (DevOps)** with the `bootstrap-environment` prompt.
+1. Run **deployment (DevOps)** as a **subagent** with the `bootstrap-environment` prompt.
 2. It discovers defaults, **asks the human** the remaining GitHub/Azure/Foundry/identity gaps,
    validates each answer, and writes `.harness/project.json` + fills the `[bootstrap]` slots.
 3. **Gate:** present the env contract to the human for approval. Do not proceed to planning until
    `project.json` exists and is human-approved.
-4. **Wire GitHub-native enforcement BEFORE any unit PR.** Once the target repo exists, spawn **deployment
-   (DevOps)** to make the gates STRUCTURAL, not just layered: vendor `harness/workflows/*.yml →
+4. **Wire GitHub-native enforcement BEFORE any unit PR.** Once the target repo exists, run **deployment
+   (DevOps)** as a **subagent** to make the gates STRUCTURAL, not just layered: vendor `harness/workflows/*.yml →
    .github/workflows/`, add `CODEOWNERS`, register the check names (one throwaway PR), then run
    `harness/deploy/github/enforce-protections.ps1 -Repo <org>/<repo> -Reviewer <human> -Branch <defaultBranch>`
    so the plan's `requiredChecks` + 1 review + CODEOWNERS are REQUIRED on the default branch (+ the
@@ -102,7 +122,8 @@ If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootst
 - Never dispatch an unapproved or label-less plan; never start planning before the env contract
   (`.harness/project.json`) exists and is human-approved.
 - **Never guess a missing or ambiguous input — ask the human.** (A wrong guess wastes a whole stage.)
-- Never do a specialist's work yourself — **decide and spawn** the right agent for each stage.
+- Never do a specialist's work yourself — **decide and delegate** the right agent for each stage
+  (subagent by default; spawn a bounded peer session only for the parallel implementation fan-out).
 - **Never exceed the plan's `concurrencyCap` live unit sessions; never double-spawn a unit that is
   in-flight or landed; never speculatively pre-spawn empty sessions.** (Anti-sprawl — consult the
   dispatch ledger first.)

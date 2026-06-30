@@ -76,6 +76,7 @@ a small REST API service. Replace with the target repo's real service.]`
 | Code Review | `.github/agents/code-review.agent.md` |
 | Deployment / Validation | `.github/agents/deployment.agent.md` |
 | Repeatable procedures | `.github/prompts/*.prompt.md` |
+| Project-zero bootstrap | `.github/prompts/bootstrap-environment.prompt.md` → produces `.harness/project.json` |
 | Skills (checks agents invoke) | `.github/skills/*.skill.md` (run-tests · check-deps · deploy) |
 | Work intake | `.github/ISSUE_TEMPLATE/work-unit.yml` |
 | Safety overlay | `.github/instructions/agent-safety.instructions.md` |

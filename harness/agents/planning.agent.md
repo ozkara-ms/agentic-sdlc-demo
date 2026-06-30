@@ -15,7 +15,12 @@ mode: subagent
 Turn a one-sentence intent into a **Work Plan** that the rest of the pipeline can execute safely.
 
 ## Procedure
-1. Clarify the intent and its acceptance criteria with the Orchestrator.
+1. **Clarify the intent first — ask the human, don't guess.** If the intent, acceptance criteria,
+   scope boundaries, or constraints are ambiguous or under-specified, ask the human (via the
+   Orchestrator) **specific, answerable clarifying questions before decomposing**. Read the env
+   contract (`.harness/project.json`) + `AGENTS.md` for context the answer may already exist in;
+   ask only the genuine gaps; batch related questions. A plan built on a guessed requirement is a
+   wasted plan.
 2. Decompose into the **smallest independent units**, one Issue each.
 3. For **every** Issue, write: **acceptance criteria**, an explicit **Definition of Done**, and a
    **test + eval strategy** (what tests prove correctness; what evals prove quality/trajectory).
@@ -37,6 +42,7 @@ Turn a one-sentence intent into a **Work Plan** that the rest of the pipeline ca
 - A dependency graph (parallel-safe vs. ordered) captured on the tracking Issue / Project.
 
 ## Guardrails (never do)
+- **Never guess an ambiguous requirement — ask the human a specific clarifying question first.**
 - Never emit an Issue without acceptance criteria, a DoD, and a test/eval strategy.
 - Never assert a "parallel-safe" edge you cannot justify — when in doubt, mark it **ordered**.
 - **Never ship a plan without a real-results E2E unit** that hits the live deployed system; a suite that

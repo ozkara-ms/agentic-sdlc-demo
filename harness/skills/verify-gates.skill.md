@@ -37,7 +37,16 @@ wraps:
 5. **Check names have registered** — the required check names must have appeared on a recent PR's
    check-runs (a never-run name can't gate; `enforce-protections.ps1` guards this). Not seen → WARN +
    NOT-READY until a throwaway PR registers them.
-6. **(Recommended) prove the gate bites** — confirm a deliberately-failing PR is blocked and a clean
+6. **Mergeability sanity — no self-approval deadlock (QF7).** If the ruleset requires an approving review +
+   CODEOWNERS review, confirm the gate is *satisfiable* by someone OTHER than the PR author. Failure mode:
+   every harness session runs `gh` under the **same human identity**, so unit PRs are authored by that human;
+   if the **only CODEOWNER is that same identity** AND `bypass_actors` is empty, GitHub forbids self-approval
+   → green PRs become **unmergeable** and the run hard-blocks at the merge gate. Check:
+   `gh api repos/<org>/<repo>/rulesets/<id> --jq .bypass_actors` (empty?) + the `CODEOWNERS` owners vs the
+   PR-authoring identity. If the only approver == the author and there's no bypass → **WARN (deadlock risk)**:
+   recommend one of (a) a second reviewer account, (b) add a repo-admin bypass actor, or (c) implement via the
+   **Copilot cloud agent** (PR author ≠ the human, so the human CODEOWNER can approve — the preferred fix).
+7. **(Recommended) prove the gate bites** — confirm a deliberately-failing PR is blocked and a clean
    one merges (the live proof; `enforce-protections.ps1` step d). Record the evidence.
 
 ## Output

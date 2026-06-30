@@ -33,6 +33,12 @@ Take the integrated, merged change to `{{DEPLOY_TARGET}}` safely and report a tr
 - Never skip smoke tests; never disable rollback.
 - Never deploy outside the Environment's protection rules (required reviewers / wait timers).
 
+## Skills
+- **`deploy`** (`skills/deploy.skill.md`) — build the container for the target
+  arch, smoke the running service on a parameterized probe, and gate on the deploy
+  workflow's **run conclusion** (not just `/healthz`). This is the skill behind
+  steps 1–3 of the procedure.
+
 ## Output
 - A deployment recorded in **deployment history** + a smoke/traffic report + go/no-go — closing the
   traceability chain (intent → … → deployment).

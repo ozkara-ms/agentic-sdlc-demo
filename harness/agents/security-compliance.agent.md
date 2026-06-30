@@ -25,8 +25,13 @@ Keep agent-written code safe, compliant, and supply-chain-sound — and leave an
 5. Produce **compliance evidence** (what was checked, findings, dispositions) on the PR.
 6. Gate via `.github/workflows/security-gate.yml` as a **required check**.
 
+## Skills
+- **`check-deps`** (`skills/check-deps.skill.md`) — run `pin-check` on the real
+  dependency manifest (`--ecosystem node|python`) to catch hallucinated /
+  slopsquatted packages, mutable specs, and missing lockfile coverage. This is the
+  skill behind step 3 of the procedure.
+
 ## Guardrails (never do)
-- Never dismiss a finding without a documented rationale.
 - Never allow an unverified or unpinned dependency.
 - Never let secrets reach history (push protection stays on).
 

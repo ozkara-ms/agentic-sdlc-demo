@@ -12,7 +12,7 @@ A ready-to-run, **presenter-led demo environment** that showcases the full softw
 | Topic | Agentic Software Development Lifecycle |
 | Format | Demo (presenter-led, customer-facing) |
 | Audience | Customer technical leadership + technical stakeholders; reusable across audiences |
-| Status | **Reusable harness template (effective A-).** Published `harness/` (agents + prompts + skills + checks + workflows) + a local-only self-test rig (`_internal/harness-selftest/`, 74/74 fixtures, 45 neg, S1–S6, 8 agents). **Live closed loop PROVEN** on `<your-org>/agentic-sdlc-demo-live` (Sweden Central, sub-2): @copilot dispatch → gates → staging→prod deploy + rollback, prod `/healthz` 200, with TEST-MODE delegated prod-approval. Both repos live in a GitHub org without Actions free-tier limits. Open: bug #21 (limiter behind ACA ingress), B1 observability/SRE, B6 doc-steward workflow. |
+| Status | **Reusable harness template (effective A-).** Published `harness/` (agents + prompts + skills + checks + workflows) + a local-only self-test rig (`_internal/harness-selftest/`, 83/83 fixtures, 52 neg, S1–S7, 8 agents — now **polyglot**: pin-check grades Python/PyPI + an independent coding-task eval oracle). **Live closed loop PROVEN** on `<your-org>/agentic-sdlc-demo-live` (Sweden Central, sub-2): @copilot dispatch → gates → staging→prod deploy + rollback, prod `/healthz` 200, with TEST-MODE delegated prod-approval. **Harness re-used to build a 2nd target** (`hosted-agent-samples/openai_agent_sdk` — keyless OpenAI-Agents-SDK coding agent on Foundry) through checkpoint-1: U1+U2+U3+U5a slice, pytest 33 green, amd64 container `/readiness` 200. Both repos live in a GitHub org without Actions free-tier limits. Open: bug #21 (limiter behind ACA ingress), B1 observability/SRE, B6 doc-steward workflow. |
 
 ## Demo Concept
 
@@ -40,7 +40,7 @@ Each stage is a "functionality in the repo" the presenter can jump to independen
 - [ ] **Fallback plan** — pre-baked branch / pre-recorded output if a live agent run stalls on stage
 - [x] **Story & talking points** — the "why agentic SDLC" narrative for the audience *(delivered as the reusable asset below)*
 - [x] **Reusable "Agentic Engineering on GitHub" asset** — client-agnostic narrative + reference harness under `docs/agentic-engineering-on-github/` (the Story; Agents + Skills + Harness; the GitHub-powered pipeline in fleet mode; drop-in example `harness/`)
-- [x] **Runnable harness backbone** — the published `harness/` template + a local-only self-test rig (`_internal/harness-selftest/`) execute offline: sample app + multi-agent harness + dispatcher + 74-fixture validation matrix (`_internal/harness-selftest/validate/run.mjs`, 45/45 negatives caught). Tiers 2 (enforced GitHub repo) and 3 (live `@copilot` fleet) remain human-gated.
+- [x] **Runnable harness backbone** — the published `harness/` template + a local-only self-test rig (`_internal/harness-selftest/`) execute offline: sample app + multi-agent harness + dispatcher + 83-fixture validation matrix (`_internal/harness-selftest/validate/run.mjs`, 52/52 negatives caught). Tiers 2 (enforced GitHub repo) and 3 (live `@copilot` fleet) remain human-gated.
 
 ## How to Verify
 
@@ -50,7 +50,7 @@ Each stage is a "functionality in the repo" the presenter can jump to independen
 | Fallback | Trigger the fallback path once | Pre-baked branch / recording renders the same outcome |
 | Setup | Follow setup instructions on a clean environment | Environment reproduces from scratch with no hidden state |
 | Asset integrity | Lint `docs/agentic-engineering-on-github/harness/**/*.yml` + check the asset's internal links | All harness YAML parses; every cross-doc link resolves |
-| **Harness self-test (runnable, offline)** | `node _internal/harness-selftest/validate/run.mjs` | `74/74 fixtures correct`, `negatives caught: 45/45`, exit 0 — each gate labelled by enforcement type |
+| **Harness self-test (runnable, offline)** | `node _internal/harness-selftest/validate/run.mjs` | `83/83 fixtures correct`, `negatives caught: 52/52`, exit 0 — each gate labelled by enforcement type |
 | **Harness run-status gate (Loop 3)** | `node _internal/harness-selftest/validate/run.mjs --filter deployment` | deployment positives pass + run-conclusion negatives caught (red-for-SHA, green-for-wrong-SHA, older-green+newer-red, queued-timeout, cancelled) |
 | **Harness scenario (one)** | `node _internal/harness-selftest/validate/run.mjs --scenario s1` | one scenario's positives pass + negatives caught (scenario axis) |
 | **Self-test sample app** | `npm --prefix _internal/harness-selftest/sample-app ci && npm --prefix _internal/harness-selftest/sample-app test` | 15 unit+e2e tests green (the "before" URL-shortener, no rate limiting yet) |
@@ -87,7 +87,7 @@ node _internal/harness-selftest/orchestrator/cli.mjs --plan _internal/harness-se
 | Path | Description |
 |------|-------------|
 | `harness/` | **The reusable, published template** the runtime reads: `AGENTS.md` + `agents/*.agent.md` + `prompts/` + `instructions/` + `skills/` (markdown) · `checks/scripts/` + `checks/lib/` (gate logic) · `workflows/` (GitHub enforcement) · `deploy/github/` (governance automation) · `CODEOWNERS` · `ISSUE_TEMPLATE/`. Drop this into a target repo (or reference it) to govern an agentic build. |
-| `_internal/harness-selftest/` | **Local-only (gitignored) self-test rig** that keeps the harness honest: `sample-app/` (system under test) · `scenarios/<id>/` (per-scenario fixtures — scenario axis) · `validate/run.mjs` (the 74/74 gate matrix) · `orchestrator/` (dispatcher proof) · `CONTRACT.md` · `HARNESS_TESTING.md` · `DEMO_SCRIPT.md`. Not part of the published template; runs the regression loop on this machine. |
+| `_internal/harness-selftest/` | **Local-only (gitignored) self-test rig** that keeps the harness honest: `sample-app/` (system under test) · `scenarios/<id>/` (per-scenario fixtures — scenario axis, incl. `s7-coding-agent` for the polyglot/Python generalizations) · `validate/run.mjs` (the 83/83 gate matrix) · `orchestrator/` (dispatcher proof) · `CONTRACT.md` · `HARNESS_TESTING.md` · `DEMO_SCRIPT.md`. Not part of the published template; runs the regression loop on this machine. |
 | `docs/agentic-engineering-on-github/` | Reusable white-label asset: the Story + Agents/Skills/Harness + GitHub pipeline + drop-in `harness/` examples |
 | `docs/` | Talking points, setup, fallback plan, the narrative |
 | `inputs/` *(add in first session)* | Seed artifacts: sample requirement / meeting notes / action item |

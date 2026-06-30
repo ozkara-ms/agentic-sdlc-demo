@@ -31,4 +31,7 @@ Prove each unit does what its Issue asked, reliably — with **tests** (determin
 - Never assert coverage you didn't actually run.
 
 ## Skills
+- **`run-tests`** (`skills/run-tests.skill.md`) — run the unit's `requiredTest` +
+  the trajectory/eval gates on the real diff and report an honest pass/fail. This
+  is the skill that turns "tests + evals are required" into an actual invocation.
 - Test + eval authoring patterns → repo `AGENTS.md` test conventions + `[examples dir]`.

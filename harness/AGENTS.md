@@ -61,12 +61,14 @@ a small REST API service. Replace with the target repo's real service.]`
 |---|---|
 | Orchestrator / Dispatcher | `.github/agents/orchestrator.agent.md` |
 | Planning / Requirements | `.github/agents/planning.agent.md` |
+| Development fleet (implements one unit) | `.github/agents/dev-fleet.agent.md` |
 | Rubber-Duck / Plan-Validation | `.github/agents/rubber-duck.agent.md` |
 | Quality / Test | `.github/agents/quality-test.agent.md` |
 | Security / Compliance | `.github/agents/security-compliance.agent.md` |
 | Code Review | `.github/agents/code-review.agent.md` |
 | Deployment / Validation | `.github/agents/deployment.agent.md` |
 | Repeatable procedures | `.github/prompts/*.prompt.md` |
+| Skills (checks agents invoke) | `.github/skills/*.skill.md` → `skills/` (run-tests · check-deps · deploy) |
 | Work intake | `.github/ISSUE_TEMPLATE/work-unit.yml` |
 | Verification | `.github/workflows/tests-and-evals.yml` |
 | Security gate | `.github/workflows/security-gate.yml` |

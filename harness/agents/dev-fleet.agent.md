@@ -34,15 +34,19 @@ unit — leaving a clean branch the harness gates can verify on a real diff.
    Honor any frozen contract exactly.
 5. **Run the tests for real.** They must pass. Never fake, skip, `xfail`, or weaken a check to go green.
    If the unit's runtime needs setup (venv, deps), do it before testing.
-6. **Make your result OBSERVABLE (pull-able) — don't just message it.** "Done" means your outcome lives
-   on a durable signal the orchestrator can POLL, not a chat it must happen to receive:
+6. **Make your result OBSERVABLE (pull-able) AND wake the orchestrator — never rely on one channel.**
+   "Done" means your outcome lives on a durable signal the orchestrator can POLL *and* you actively
+   nudged it to look:
    - **push your branch** and **open a PR** (the primary pull signal — `gh pr list` finds it), AND
    - **update `.harness/units/<id>.json`** to its terminal state (`pushed` with the real `testResult` +
-     PR ref, or `blocked` with the reason), `ts` updated.
-   A courtesy chat report to the orchestrator is welcome, but the **branch/PR + status artifact are the
-   contract** — they let the orchestrator (and any observer/cockpit) tell "working" from "stuck" by
-   polling, instead of guessing from silence. The harness gates (path-scope, trajectory, pin-check, eval)
-   then run on your diff.
+     PR ref, or `blocked` with the reason), `ts` updated, AND
+   - **send the orchestrator a wake message** (`send_session_message` to your creator) at each terminal
+     transition (`pushed` / `blocked`). The **branch/PR + artifact are what it POLLS**; the **message is
+     what WAKES it to poll** (a spawned session's report channel is push-only, so the orchestrator can
+     otherwise stay idle, unaware you finished). Send **both** — if the message is missed, the durable
+     signal persists; if polling lags, the message re-drives it. Never depend on only one.
+   This lets the orchestrator (and any observer/cockpit) tell "working" from "stuck" by polling instead of
+   guessing from silence. The harness gates (path-scope, trajectory, pin-check, eval) then run on your diff.
 
 ### Unit status artifact (`.harness/units/<id>.json`) — the pull-able signal
 ```jsonc

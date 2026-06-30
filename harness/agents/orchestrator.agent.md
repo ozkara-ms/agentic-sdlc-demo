@@ -83,6 +83,16 @@ If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootst
 > not advanced (no new commit/integration) within a reasonable window, **STOP spawning and diagnose** — do not
 > keep creating sessions. Unbounded worktree growth with stalled integration is a defect, not progress.
 
+> **Stay the driver — dispatch is not fire-and-forget.** A spawned session's report channel is push-only and
+> you have **no tool to pull its live status**; the source of truth is what you can OBSERVE (branch/PR +
+> `.harness/units/<id>.json`). So: (a) **remain the active conductor until every dispatched unit reaches a
+> terminal state** (merged or abandoned) — don't consider your job done at "spawned"; (b) when **woken by any
+> child's message (or a human nudge), RECONCILE THE WHOLE FLEET** — poll *all* in-flight units' branches/PRs/
+> artifacts, not just the one that messaged (the others may have finished silently); (c) if you must yield the
+> turn, **leave a re-drivable status** in `.harness/dispatch.json` (`N in-flight: <unit ids> → where to poll`)
+> so a human/child-message/cron can wake you to reconcile — never end a run with units in-flight and no
+> recorded way to resume. Losing track of a spawned session is the #1 observed failure mode (F8).
+
 ## Output contract
 - A dispatch summary naming each ready, held, and blocked unit with the reason.
 - A dependency-aware wave plan that distinguishes parallel-safe work from ordered work.
@@ -100,6 +110,9 @@ If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootst
 - **Never infer a unit is alive (or dead) from silence.** Unit status comes from POLLING its branch/PR +
   `.harness/units/<id>.json` artifact — not from a chat message you happened to receive. No observable
   signal within the window = STUCK (diagnose/timeout), never silent-wait and never re-spawn. (F8 root cause.)
+- **Never treat dispatch as fire-and-forget.** Remain the driver until every dispatched unit is terminal;
+  on any wake, RECONCILE THE WHOLE FLEET (poll all in-flight units, not just the messenger); if you yield,
+  leave a re-drivable `N in-flight` status in `.harness/dispatch.json`. Never lose track of a spawned session.
 - Never parallelize units with dependency edges, shared ownership, or unclear boundaries.
 - Never merge PRs; humans and repository rules own merge approval.
 - **Never present a run as "gated" when GitHub enforces nothing** — if required checks + branch

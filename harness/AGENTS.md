@@ -22,18 +22,21 @@ a small REST API service. Replace with the target repo's real service.]`
 
 ## 2. The discipline — Enforce → Plan → Validate → Issues → Execute (non-negotiable)
 
-0. **Enforce first.** Before any work Issue exists, GitHub-native gates must be **LIVE** on the repo —
+0. **Workspace hygiene first.** Before trusting any local `.harness` artifact, the orchestrator must prove the
+   checkout is on the current default-branch tip and that existing `.harness/plan.json` / `dispatch.json`
+   belongs to the current run. Stale run artifacts are quarantined, not reused.
+1. **Enforce first.** Before any work Issue exists, GitHub-native gates must be **LIVE** on the repo —
    gate workflows in `.github/workflows/`, required status checks, branch protection + **CODEOWNERS** on the
    default branch (prove it with the **`verify-gates`** skill). Ungated Issues produce ungated PRs.
-1. **Plan first (locally).** No implementation without an approved plan: each unit specified with acceptance
+2. **Plan first (locally).** No implementation without an approved plan: each unit specified with acceptance
    criteria, a Definition of Done, a test/eval strategy, declared paths, a required test, and a dependency
    graph — emitted as a **LOCAL, issue-ready artifact** (`.harness/work-plan.md`), not yet GitHub Issues.
-2. **Validate the plan.** The plan passes a **rubber-duck / devil's-advocate** review **and** a human
+3. **Validate the plan.** The plan passes a **rubber-duck / devil's-advocate** review **and** a human
    approval **before any code is written**. This is a hard gate.
-3. **Materialize as Issues.** Only the **approved** plan becomes GitHub Issues — one tracking Issue + one
+4. **Materialize as Issues.** Only the **approved** plan becomes GitHub Issues — one tracking Issue + one
    **work-unit** child per unit — via the **`plan-to-issues`** skill. Issues are the durable work intake the
    pipeline dispatches from (assign each to a dev-fleet agent or **Copilot cloud agent**).
-4. **Execute** only against the validated, approved, **Issue-tracked** plan, on an **enforced** repo.
+5. **Execute** only against the validated, approved, **Issue-tracked** plan, on an **enforced** repo.
 
 **Never implement an unvalidated plan. Never create Issues before validation + approval + live gates.
 Never parallelize dependent units. The human gates (plan-approval · PR-merge · deploy) are HARD STOPS —
@@ -87,7 +90,7 @@ in autopilot.**
 | Deployment / Validation | `.github/agents/deployment.agent.md` |
 | Repeatable procedures | `.github/prompts/*.prompt.md` |
 | Project-zero bootstrap | `.github/prompts/bootstrap-environment.prompt.md` → produces `.harness/project.json` |
-| Skills (checks agents invoke) | `.github/skills/*.skill.md` (run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues**) |
+| Skills (checks agents invoke) | `.github/skills/*.skill.md` (workspace-hygiene · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues**) |
 | Work intake | `.github/ISSUE_TEMPLATE/work-unit.yml` — materialized from the approved plan by **`plan-to-issues`** |
 | Safety overlay | `.github/instructions/agent-safety.instructions.md` |
 | Verification (GitHub phase — **wired before any Issue**) | `.github/workflows/tests-and-evals.yml` |

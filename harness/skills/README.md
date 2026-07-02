@@ -40,6 +40,7 @@ that must exist in the target:
 | [`run-tests`](run-tests.skill.md) | the unit's `requiredTest` + `<HARNESS_ROOT>/checks/scripts/trajectory-check.mjs` + `eval-rubric.mjs` | quality-test |
 | [`check-deps`](check-deps.skill.md) | `<HARNESS_ROOT>/checks/scripts/pin-check.mjs` | security-compliance |
 | [`deploy`](deploy.skill.md) | container build + `<HARNESS_ROOT>/checks/scripts/smoke-check.mjs` + `checks/lib/run-status.mjs` | deployment |
+| [`workspace-hygiene`](workspace-hygiene.skill.md) | `git fetch/status` + `.harness` provenance checks (procedure, not a CI gate) | orchestrator |
 
 ## Honesty rules (apply to every skill)
 

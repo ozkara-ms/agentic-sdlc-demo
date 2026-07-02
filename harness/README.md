@@ -35,7 +35,7 @@ the enforcement-boundary map in `../02-agents-skills-harness.md` Part 4.)
 | `agents/deployment.agent.md` | `.github/agents/` | Deployment / Validation role |
 | `prompts/decompose-intent.prompt.md` | `.github/prompts/` | Decomposition procedure |
 | `prompts/validate-plan.prompt.md` | `.github/prompts/` | Plan-validation procedure |
-| `skills/*.skill.md` | `.github/skills/` | Agent skills: run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues** |
+| `skills/*.skill.md` | `.github/skills/` | Agent skills: workspace-hygiene · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues** |
 | `workflows/tests-and-evals.yml` | `.github/workflows/` | Verification: tests + evals |
 | `workflows/security-gate.yml` | `.github/workflows/` | Security gate (GHAS) |
 | `ISSUE_TEMPLATE/work-unit.yml` | `.github/ISSUE_TEMPLATE/` | Work intake — materialized from the approved plan by `plan-to-issues` |
@@ -46,14 +46,17 @@ the enforcement-boundary map in `../02-agents-skills-harness.md` Part 4.)
 2. Copy `agents/`, `instructions/`, `prompts/`, `skills/`, `ISSUE_TEMPLATE/`, and `workflows/` under the repo's **`.github/`**.
 3. Replace the placeholder `echo` steps with your real test / eval / supply-chain commands.
 4. Set the **CodeQL language(s)** in `security-gate.yml`.
-5. **Turn on enforcement BEFORE the first unit Issue/PR** (the caveat above): vendor the workflows, add
+5. **Run workspace hygiene before every lifecycle attempt:** fetch the remote default branch, confirm the
+   checkout is not stale/diverged, and quarantine old generated `.harness` artifacts before trusting an
+   existing plan/dispatch file.
+6. **Turn on enforcement BEFORE the first unit Issue/PR** (the caveat above): vendor the workflows, add
    `CODEOWNERS`, register the check names (one throwaway PR), then run
    `deploy/github/enforce-protections.ps1 -Repo <org>/<repo> -Reviewer <you>` to require checks +
    CODEOWNERS review + Environments, and confirm with the **`verify-gates`** skill. **Files alone enforce
    nothing — this is the load-bearing step** (skipping it = unit PRs merge ungated; the F6 gap).
-6. **Drive the lifecycle:** local planning → rubber-duck → human approval → **`plan-to-issues`** (create the
+7. **Drive the lifecycle:** local planning → rubber-duck → human approval → **`plan-to-issues`** (create the
    GitHub Issues) → dispatch each Issue to a dev-fleet agent or **Copilot cloud agent** → gated PRs.
-6. Set the white-label variables (`{{DEMO_APP}}`, `{{DEPLOY_TARGET}}`, `{{FLEET_CONCURRENCY}}`, …) per
+8. Set the white-label variables (`{{DEMO_APP}}`, `{{DEPLOY_TARGET}}`, `{{FLEET_CONCURRENCY}}`, …) per
    [`../00-canon-and-variables.md`](../00-canon-and-variables.md).
 
 > **Native vs. layered, in these files:** the workflows' **tests** and **GHAS** steps are 🟩 native;

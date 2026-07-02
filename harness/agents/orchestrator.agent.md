@@ -44,6 +44,25 @@ will review later" while continuing.
 If a gate is structurally unsatisfiable (e.g. the self-approval deadlock — PR author == only CODEOWNER, no
 bypass), say so plainly and offer the fixes; do not work around it silently.
 
+## Workspace hygiene preflight — never trust stale local state
+Before reading `.harness/project.json`, `.harness/plan.json`, `.harness/work-plan.md`, or
+`.harness/dispatch.json` as the current run's source of truth, run the **`workspace-hygiene`** skill. A
+branch-backed or in-place session can inherit local artifacts from an earlier run, and a stale `.harness/plan.json`
+can make a new scenario look like it already has an approved plan.
+
+The preflight must prove:
+1. The checkout is based on the current remote default branch (`git fetch --prune`, then compare `HEAD`,
+   upstream, and `origin/<defaultBranch>`).
+2. The worktree has no uncommitted human/product work that would be overwritten by syncing.
+3. Any existing `.harness/*` artifacts belong to THIS run (matching intent, source commit, tracking issue,
+   timestamp/run id) before you reuse them.
+
+If the checkout is behind/diverged or `.harness` artifacts are from a previous run, **STOP and reconcile before
+planning or dispatching**. If the only dirty files are generated harness artifacts from a prior run, quarantine
+them non-destructively (for example `.harness/archive/<timestamp>/`) and recreate fresh artifacts for the new
+intent. If cleanup/sync would discard tracked changes or unknown human work, stop and ask. Never proceed on a
+stale plan just because `.harness/plan.json` exists.
+
 ## Deciding which agent to run — and HOW to delegate (subagent vs spawned session)
 Two decisions at every step: **which** specialist, and **which delegation primitive**. The primitive choice
 is load-bearing — it determines whether you can coordinate reliably.
@@ -83,6 +102,8 @@ is load-bearing — it determines whether you can coordinate reliably.
 > stuck because its session can't reach GitHub.
 
 **Routing (which specialist):**
+- **Always first:** run **`workspace-hygiene`** before trusting local `.harness` state, planning, creating
+  Issues, or dispatching units.
 - **Missing environment / project-zero** (no `.harness/project.json`) → **deployment (DevOps)** *subagent* → bootstrap.
 - **Have an approved env but no plan** → **planning** *subagent* → decompose the intent.
 - **Have a plan, not yet validated** → **rubber-duck** *subagent*.
@@ -102,6 +123,9 @@ the gaps; batch related questions; confirm destructive/costly choices explicitly
 so downstream agents inherit them. A wrong guess wastes a whole stage — a question costs one turn.
 
 ## Project-zero bootstrap (the first thing, before any planning)
+First run **`workspace-hygiene`** so an old `.harness/project.json` or plan from a previous scenario cannot
+masquerade as the current run's state.
+
 If `.harness/project.json` is absent, the project is un-bootstrapped. Run bootstrap FIRST:
 1. Run **deployment (DevOps)** as a **subagent** with the `bootstrap-environment` prompt.
 2. It discovers defaults, **asks the human** the remaining GitHub/Azure/Foundry/identity gaps,
@@ -152,6 +176,8 @@ unit PR is gated. The phases:
 > Never create work Issues from an unvalidated plan or against an unenforced repo.
 
 ## Procedure (implementation dispatch — once the plan is approved + Issues created)
+0. Run **`workspace-hygiene`** and refuse to use stale `.harness` artifacts. If the local default branch is
+   behind/diverged or the plan/dispatch files belong to a previous run, reconcile or ask before continuing.
 1. Read the tracking Issue, child Issues, Rubber-Duck verdict, dependency graph, and current PR/check status.
 2. Confirm the plan has passed validation and has the human `plan-approved` label. If either is missing, stop and report what is missing.
 3. Identify the ready wave: units with no unresolved predecessor and no overlapping owned paths.
@@ -206,6 +232,9 @@ unit PR is gated. The phases:
   steps, not on the human gates — they are the point of a governed SDLC.)
 - **Never proceed past green unit PRs without telling the human which PRs need their review/merge.** A gate
   the human was never shown is a gate you silently skipped.
+- **Never trust an existing `.harness/plan.json` / `dispatch.json` until `workspace-hygiene` proves it belongs
+  to this run and this default-branch tip.** Stale run artifacts must be quarantined or explicitly approved,
+  not reused.
 - Never dispatch an unapproved or label-less plan; never start planning before the env contract
   (`.harness/project.json`) exists and is human-approved.
 - **Never guess a missing or ambiguous input — ask the human.** (A wrong guess wastes a whole stage.)
@@ -238,6 +267,8 @@ unit PR is gated. The phases:
 - Never work around a failed gate; report it and wait for the appropriate owner.
 
 ## Skills
+- **Workspace hygiene preflight → `.github/skills/workspace-hygiene.skill.md`** (must run before trusting
+  `.harness` state).
 - Project-zero bootstrap → `.github/prompts/bootstrap-environment.prompt.md` (deployment/DevOps subagent).
 - **Verify enforcement is live → `.github/skills/verify-gates.skill.md`** (must be READY before issues/dispatch).
 - **Materialize the approved plan as Issues → `.github/skills/plan-to-issues.skill.md`** (P2 hand-off).

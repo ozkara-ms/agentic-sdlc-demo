@@ -1,7 +1,7 @@
 ---
 name: dev-fleet
 description: Development-fleet agent — implements EXACTLY ONE approved, parallel-safe work unit on its own branch, writes its tests, and stays strictly in its lane. EXAMPLE custom agent.
-tools: [read, search, edit, github, actions]
+tools: [read, search, edit, terminal, github, actions, workiq]
 model: standard # implementation throughput; one scoped unit at a time.
 mode: subagent
 ---

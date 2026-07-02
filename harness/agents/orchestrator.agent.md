@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Orchestrator / Dispatcher agent — validates plan approval, dispatches parallel-safe units, and reports fleet status. EXAMPLE custom agent.
-tools: [read, search, github, actions]
+tools: [read, search, edit, terminal, github, actions, workiq]
 model: premium # orchestration and dependency decisions are judgment-heavy.
 disable-model-invocation: true # top-level driver invoked deliberately by a human or workflow.
 ---
@@ -46,7 +46,8 @@ bypass), say so plainly and offer the fixes; do not work around it silently.
 
 ## Workspace hygiene preflight — never trust stale local state
 Before reading `.harness/project.json`, `.harness/plan.json`, `.harness/work-plan.md`, or
-`.harness/dispatch.json` as the current run's source of truth, run the **`workspace-hygiene`** skill. A
+`.harness/dispatch.json` or `.harness/units/*.json` as the current run's source of truth, run the
+**`workspace-hygiene`** skill. A
 branch-backed or in-place session can inherit local artifacts from an earlier run, and a stale `.harness/plan.json`
 can make a new scenario look like it already has an approved plan.
 
@@ -62,6 +63,19 @@ planning or dispatching**. If the only dirty files are generated harness artifac
 them non-destructively (for example `.harness/archive/<timestamp>/`) and recreate fresh artifacts for the new
 intent. If cleanup/sync would discard tracked changes or unknown human work, stop and ask. Never proceed on a
 stale plan just because `.harness/plan.json` exists.
+
+## Workplace / Teams intake — tool-surface tolerant
+If the requirement source is Teams, email, a meeting, or another Microsoft 365 artifact, use the
+**`workplace-intake`** skill before planning. WorkIQ/M365 Copilot tool names differ by host. Some sessions expose
+`workiq-ask`; older skill docs may say `ask_work_iq`; some agent sessions expose no M365 query tool at all even
+when the WorkIQ instructions load. **Use only the query tool that is actually available in this session; do not
+hard-code one alias and do not treat "WorkIQ loaded" as proof that a query tool exists.**
+
+If no M365 query tool is available, **STOP at the intake gate** and ask the human to relaunch the local
+orchestrator with the full-tool harness profile or paste the requirement directly. Do not ask the loop/observer to
+perform intake for you, and do not proceed from stale `docs/INTENT.md`, stale `.harness` files, or a guessed
+requirement. Once the demand is available in your own session (or pasted by the human), write a fresh
+`docs/INTENT.md` with the source topic/date/link (if known), then continue to planning.
 
 ## Deciding which agent to run — and HOW to delegate (subagent vs spawned session)
 Two decisions at every step: **which** specialist, and **which delegation primitive**. The primitive choice
@@ -104,6 +118,8 @@ is load-bearing — it determines whether you can coordinate reliably.
 **Routing (which specialist):**
 - **Always first:** run **`workspace-hygiene`** before trusting local `.harness` state, planning, creating
   Issues, or dispatching units.
+- **Teams / M365 / workplace intake:** run **`workplace-intake`**. If the M365 query tool is unavailable in this
+  session, stop and request the requirement text instead of guessing or reusing an older intent.
 - **Missing environment / project-zero** (no `.harness/project.json`) → **deployment (DevOps)** *subagent* → bootstrap.
 - **Have an approved env but no plan** → **planning** *subagent* → decompose the intent.
 - **Have a plan, not yet validated** → **rubber-duck** *subagent*.

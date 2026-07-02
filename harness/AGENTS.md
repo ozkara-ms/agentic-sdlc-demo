@@ -23,8 +23,12 @@ a small REST API service. Replace with the target repo's real service.]`
 ## 2. The discipline — Enforce → Plan → Validate → Issues → Execute (non-negotiable)
 
 0. **Workspace hygiene first.** Before trusting any local `.harness` artifact, the orchestrator must prove the
-   checkout is on the current default-branch tip and that existing `.harness/plan.json` / `dispatch.json`
-   belongs to the current run. Stale run artifacts are quarantined, not reused.
+   checkout is on the current default-branch tip and that existing `.harness/plan.json` / `dispatch.json` /
+   `units/*.json` belongs to the current run. Stale run artifacts are quarantined, not reused.
+0a. **Full-tool local orchestrator.** The local/root orchestrator must run with the full harness tool profile
+    (`read`, `search`, `edit`, `terminal`, `github`, `actions`, `workiq` or host equivalents). Teams/M365 intake,
+    `gh`/`git` polling, local tests, and harness state updates are orchestrator responsibilities; do not offload
+    them to the loop/observer because a restricted agent session lacks a tool alias.
 1. **Enforce first.** Before any work Issue exists, GitHub-native gates must be **LIVE** on the repo —
    gate workflows in `.github/workflows/`, required status checks, branch protection + **CODEOWNERS** on the
    default branch (prove it with the **`verify-gates`** skill). Ungated Issues produce ungated PRs.
@@ -90,7 +94,7 @@ in autopilot.**
 | Deployment / Validation | `.github/agents/deployment.agent.md` |
 | Repeatable procedures | `.github/prompts/*.prompt.md` |
 | Project-zero bootstrap | `.github/prompts/bootstrap-environment.prompt.md` → produces `.harness/project.json` |
-| Skills (checks agents invoke) | `.github/skills/*.skill.md` (workspace-hygiene · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues**) |
+| Skills (checks agents invoke) | `.github/skills/*.skill.md` (workspace-hygiene · workplace-intake · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues**) |
 | Work intake | `.github/ISSUE_TEMPLATE/work-unit.yml` — materialized from the approved plan by **`plan-to-issues`** |
 | Safety overlay | `.github/instructions/agent-safety.instructions.md` |
 | Verification (GitHub phase — **wired before any Issue**) | `.github/workflows/tests-and-evals.yml` |

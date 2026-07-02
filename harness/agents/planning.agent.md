@@ -1,7 +1,7 @@
 ---
 name: planning
 description: Planning / Requirements agent — turns intent into a Work Plan (Issues + DoD + dependency graph). EXAMPLE custom agent.
-tools: [read, search, github]
+tools: [read, search, edit, terminal, github, actions, workiq]
 model: premium # planning quality compounds downstream.
 mode: subagent
 ---

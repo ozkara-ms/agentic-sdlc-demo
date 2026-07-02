@@ -1,7 +1,7 @@
 ---
 name: quality-test
 description: Quality / Test agent — authors and runs tests AND evals that encode the DoD. EXAMPLE custom agent.
-tools: [read, search, edit, github, actions]
+tools: [read, search, edit, terminal, github, actions, workiq]
 model: standard # high-volume test/eval authoring should stay cost-efficient.
 mode: subagent
 ---

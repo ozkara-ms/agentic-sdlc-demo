@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: Code Review agent — custom reviewer layered on Copilot code review; checks quality, docs, and architecture impact. EXAMPLE custom agent.
-tools: [read, search, github, actions]
+tools: [read, search, edit, terminal, github, actions, workiq]
 model: premium # review quality and architecture judgment are attention-sensitive.
 mode: subagent
 ---

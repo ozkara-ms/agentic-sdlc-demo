@@ -46,16 +46,25 @@ wraps:
    PR-authoring identity. If the only approver == the author and there's no bypass → **WARN (deadlock risk)**:
    recommend one of (a) a second reviewer account, (b) add a repo-admin bypass actor, or (c) implement via the
    **Copilot cloud agent** (PR author ≠ the human, so the human CODEOWNER can approve — the preferred fix).
-7. **(Recommended) prove the gate bites** — confirm a deliberately-failing PR is blocked and a clean
+7. **Cloud-dispatch readiness — is the required implementer available?** The default implementer is the
+   Copilot cloud agent, so confirm it can actually be assigned BEFORE creating/dispatching issues:
+   `gh api graphql -f query='query($o:String!,$r:String!){ repository(owner:$o,name:$r){ suggestedActors(capabilities:[CAN_BE_ASSIGNED],first:20){ nodes{ login __typename ... on Bot{ id } } } } }' -f o=<org> -f r=<repo>`
+   → the nodes must include the **Bot `copilot-swe-agent`**; capture its `BOT_…` node id for dispatch. Absent →
+   cloud dispatch is **UNAVAILABLE**: report it as a blocker (enable the Copilot coding agent via org/repo
+   policy). Do NOT let this silently become a local implementation — a local dev-fleet fallback requires an
+   explicit human pre-approval for the run (`.harness/dispatch.json → fallbackImplementation.preApproved`).
+8. **(Recommended) prove the gate bites** — confirm a deliberately-failing PR is blocked and a clean
    one merges (the live proof; `enforce-protections.ps1` step d). Record the evidence.
 
 ## Output
-- **READY** — every gate above is live; safe to create work issues + dispatch. Record the evidence
-  (commands + results) for the audit trail.
+- **READY** — every gate above is live **and cloud dispatch is available** (the `copilot-swe-agent` Bot id is
+  captured); safe to create work issues + dispatch. Record the evidence (commands + results) for the audit trail.
 - **NOT-READY** — the explicit list of missing gates + the exact remediation (which workflow to vendor,
   which protection to set, run `enforce-protections.ps1 -Repo <org>/<repo> -Reviewer <human>`), handed
-  back to the **deployment** agent. The orchestrator must NOT proceed to issues/dispatch until READY (or
-  explicitly label the run **layered-only (unenforced)** and say so).
+  back to the **deployment** agent. If the only gap is cloud-dispatch readiness, either enable the Copilot
+  coding agent, or the human must pre-approve a local dev-fleet fallback before dispatch. The orchestrator must
+  NOT proceed to issues/dispatch until READY (or explicitly label the run **layered-only (unenforced)** and say
+  so).
 
 ## Honesty rules (hard)
 - **Never report READY unless the named required checks + branch protection + CODEOWNERS are all

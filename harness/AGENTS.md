@@ -20,6 +20,18 @@ a small REST API service. Replace with the target repo's real service.]`
 - **Run locally:** `[command]`
 - **Test:** `[command]` · **Lint:** `[command]` · **Build:** `[command]`
 
+## Demo operating mode / ownership summary
+
+- The **local/root orchestrator** owns the lifecycle state machine and handoffs, starting from a fresh
+  current default-branch workspace and running `workspace-hygiene` before trusting `.harness` artifacts.
+- **GitHub** owns durable records and native enforcement: Issues, PRs, required checks, branch protection,
+  CODEOWNERS review, and environment/deploy approvals.
+- **Copilot cloud agents** are implementation workers for exactly one approved work-unit Issue at a time; launch
+  them by GraphQL assignment to the assignable Bot `copilot-swe-agent`, not by an `@copilot` mention.
+- **Human gates are hard stops:** plan approval, PR merge/CODEOWNERS review, and deploy/live E2E approval.
+- For Teams/M365 intake, use WorkIQ when available; otherwise ask for the pasted Teams message/source text rather
+  than guessing.
+
 ## 2. The discipline — Enforce → Plan → Validate → Issues → Execute (non-negotiable)
 
 0. **Workspace hygiene first.** Before trusting any local `.harness` artifact, the orchestrator must prove the

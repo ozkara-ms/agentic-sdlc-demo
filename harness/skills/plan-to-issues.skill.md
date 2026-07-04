@@ -66,14 +66,23 @@ owner: orchestrator
 5. **Wire dependencies** — now that child numbers exist, edit each unit's body/`dependsOn` to reference
    the real issue numbers (e.g. `Depends on #12, #13`), and link them on the tracking issue's task list
    (`- [ ] #<n> <id>`). The path-scope + dependency graph stays the source of truth.
-6. **Write the dispatch map** `.harness/dispatch.json`: `{ trackingIssue: T, units: [{id, issue, branch:"",
-   session:"", status:"queued", dependsOn:[issue numbers]}] }`. This is what the orchestrator polls +
-   updates (pull-observable, the F8 discipline) so implementation is driven from Issues, not chat.
+6. **Write the dispatch map** `.harness/dispatch.json`: `{ trackingIssue: T,
+   fallbackImplementation:{preApproved:false, approvedBy:"", at:""}, units: [{id, issue,
+   implementer:"unassigned", actorId:"", branch:"", pr:0, session:"", status:"queued",
+   dependsOn:[issue numbers]}] }`. `fallbackImplementation.preApproved` stays **false** unless the human
+   explicitly pre-approved a local dev-fleet fallback at the plan-approval gate; `actorId` records the resolved
+   `BOT_…` id once the cloud agent is assigned. This is what the orchestrator polls + updates (pull-observable,
+   the F8 discipline) so implementation is driven from Issues, not chat.
 7. **Output**: the tracking issue `#T` + the child issue numbers + the dispatch map. The orchestrator now
-   dispatches each ready unit by **assigning its issue** to an implementer (preferably the **Copilot cloud
-   agent**, else a dev-fleet subagent), which opens a gated PR that closes the issue on merge.
+   dispatches each ready unit by **assigning its issue to the Copilot cloud agent (the REQUIRED default)** — a
+   dev-fleet subagent is used only as a **human-pre-approved fallback** once cloud dispatch is proven
+   unavailable. The assigned implementer opens a gated PR that closes the issue on merge.
 
-## Assigning the Copilot cloud agent (use GraphQL, NOT `--add-assignee copilot`)
+## Assigning the Copilot cloud agent (use GraphQL assignment, NOT mentions or `--add-assignee copilot`)
+An `@copilot` issue comment/mention is **not** the launch mechanism. Dispatch launches the cloud agent by assigning
+the work-unit Issue to the assignable Bot `copilot-swe-agent` via GraphQL, then records that implementer in
+`.harness/dispatch.json` and polls GitHub for the resulting branch/PR/checks.
+
 The REST assignee API does **not** recognize the login `copilot`/`Copilot` → `gh issue edit <n> --add-assignee
 copilot` returns **HTTP 404**, which looks like "the bot lacks repo access" but usually isn't. Copilot is
 assignable when it appears in the repo's `suggestedActors(capabilities:[CAN_BE_ASSIGNED])` as the **Bot
@@ -96,9 +105,20 @@ enable it via the org/repo Copilot policy. The cloud agent opens a branch `copil
 `app/copilot-swe-agent` (a non-human identity → the human CODEOWNER can approve it, dissolving the QF7
 self-approval deadlock; and it runs in its own GitHub-Actions env → no local shell/git tooling gap, QF3).
 
+Immediately after a successful mutation, update the unit entry in `.harness/dispatch.json` to
+`implementer:"copilot-swe-agent"`, `status:"assigned"`, and keep `branch`/`pr` blank until observed. Then poll
+durable GitHub signals (`gh issue view`, `gh pr list`, check runs/status checks) until the branch, PR, and checks
+appear; never wait for a chat acknowledgement as proof of launch.
+
 ## Honesty rules (hard)
 - **Never create work issues before `verify-gates` is READY** — ungated issues produce ungated PRs (F6).
 - **Never create issues from an unvalidated or unapproved plan** — the rubber-duck + human gate comes first.
 - Mirror the work-unit fields faithfully; an issue missing `declaredPaths`/`requiredTest`/DoD breaks the
   downstream path-scope + trajectory gates. The ordered **E2E unit must carry the live-URL contract**.
 - Record the unit→issue map in `.harness/dispatch.json` so status is pull-observable (no fire-and-forget).
+- Never treat an `@copilot` mention/comment as dispatch; only the GraphQL assignment to `copilot-swe-agent`
+  launches the cloud implementation worker.
+- **Resolve the `copilot-swe-agent` Bot node id from `suggestedActors` at dispatch time** (a `BOT_…` id on the
+  target repo). Never hardcode it, cache it across runs, or use a global user-search node (`U_…` from
+  `search(type:USER)`) — the wrong id makes `replaceActorsForAssignable` fail, and that failure must NOT be
+  treated as license to implement the unit locally (local fallback needs explicit human pre-approval).

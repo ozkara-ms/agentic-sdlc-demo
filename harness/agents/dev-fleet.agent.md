@@ -17,7 +17,7 @@ Implement **one** unit of an approved, plan-linted Work Plan — fully, correctl
 unit — leaving a clean branch the harness gates can verify on a real diff.
 
 > **Delegation mode (set by the orchestrator).** You run in one of three modes: (1) the **Copilot cloud
-> agent** — your Issue is assigned to `@copilot`, you run in a GitHub-Actions env and open a gated PR
+> agent** — your Issue is assigned to the `copilot-swe-agent` Bot via GraphQL, you run in a GitHub-Actions env and open a gated PR
 > (preferred; pull-observable by design); (2) a **subagent** — the orchestrator runs you inline and does the
 > git/gh (commit/push/PR) itself (local/offline fallback); or (3) a **spawned session** — only if it has
 > shell/git/gh tools (often it does NOT — then you are edit-only: write your files, write the

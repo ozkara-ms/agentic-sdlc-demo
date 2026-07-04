@@ -23,6 +23,16 @@ concise status.
 GitHub enforcement. GitHub enforces only required status checks, required reviews, and the
 label-conditioned workflow result. Never claim that GitHub natively blocks pre-code dispatch.
 
+## Demo operating model — who owns what
+- The **local/root orchestrator** owns the lifecycle state machine and handoffs: intake, workspace hygiene,
+  planning, validation, issue materialization, dispatch, fleet reconciliation, review surfacing, and deploy
+  go/no-go. It must run with the full harness tool profile and remain the driver.
+- **GitHub** owns durable records and native enforcement: tracking/work-unit Issues, linked PRs, required status
+  checks, branch protection, CODEOWNERS review, and environment approvals.
+- **Copilot cloud agents** are implementation workers only: one approved work-unit Issue at a time, one branch,
+  one linked PR, no planning authority, no merge authority.
+- **Humans** own the hard gates: plan approval, PR merge/CODEOWNERS review, and deploy/live E2E approval.
+
 ## Human gates are HARD STOPS — stop and ASK, never self-approve (even in autopilot)
 The lifecycle has **three human decision gates**, and they are the whole point of a *governed* SDLC. At each
 one you must **STOP, surface the decision to the human with the concrete artifacts, and WAIT for an explicit
@@ -34,17 +44,24 @@ will review later" while continuing.
 1. **Plan-approval gate (before `plan-to-issues`).** After rubber-duck PASS, present the plan (units, DoD,
    dependency graph) and **ask the human to approve materializing it as Issues**. Do **not** create any Issue
    until the human explicitly approves. Record *who* approved and *when* — if you cannot get a human answer,
-   STOP and report "awaiting plan approval", do not self-continue.
+   STOP and report "awaiting plan approval", do not self-continue. **At this same gate, confirm the implementer
+   policy:** the Copilot cloud agent is the required default; if the human wants a local dev-fleet fallback
+   permitted when cloud dispatch is unavailable, they must **PRE-APPROVE it here** (recorded in
+   `.harness/dispatch.json → fallbackImplementation`). Default = no fallback → cloud required, else stop-and-ask.
 2. **PR-merge gate (the CODEOWNERS review).** You never merge. When unit PRs are green, **proactively tell the
    human exactly which PRs await their review** (e.g. "PRs #8, #9 are green on all required checks and need
    your review/approval to merge") and **wait** — do not silently move on to later stages as if the merge gate
    were satisfied. Surfacing this gate is your job; the human can't act on a gate you never showed them.
-3. **Deploy gate.** Before any release/registration, **ask the human to approve the deploy** and wait.
+3. **Deploy/live E2E gate.** Before any release/registration or live E2E validation run, **ask the human to
+   approve the deploy/live validation** and wait.
 
 If a gate is structurally unsatisfiable (e.g. the self-approval deadlock — PR author == only CODEOWNER, no
 bypass), say so plainly and offer the fixes; do not work around it silently.
 
-## Workspace hygiene preflight — never trust stale local state
+## Workspace hygiene preflight — start fresh and never trust stale local state
+Begin every demo/run from a fresh workspace at the current default-branch tip, then run the
+**`workspace-hygiene`** skill before trusting any local harness files.
+
 Before reading `.harness/project.json`, `.harness/plan.json`, `.harness/work-plan.md`, or
 `.harness/dispatch.json` or `.harness/units/*.json` as the current run's source of truth, run the
 **`workspace-hygiene`** skill. A
@@ -72,36 +89,49 @@ when the WorkIQ instructions load. **Use only the query tool that is actually av
 hard-code one alias and do not treat "WorkIQ loaded" as proof that a query tool exists.**
 
 If no M365 query tool is available, **STOP at the intake gate** and ask the human to relaunch the local
-orchestrator with the full-tool harness profile or paste the requirement directly. Do not ask the loop/observer to
-perform intake for you, and do not proceed from stale `docs/INTENT.md`, stale `.harness` files, or a guessed
-requirement. Once the demand is available in your own session (or pasted by the human), write a fresh
+orchestrator with the full-tool harness profile or paste the Teams message / source requirement directly. Do not
+ask the loop/observer to perform intake for you, and do not proceed from stale `docs/INTENT.md`, stale `.harness`
+files, or a guessed requirement. Once the demand is available in your own session (or pasted by the human), write a fresh
 `docs/INTENT.md` with the source topic/date/link (if known), then continue to planning.
 
 ## Deciding which agent to run — and HOW to delegate (subagent vs spawned session)
 Two decisions at every step: **which** specialist, and **which delegation primitive**. The primitive choice
 is load-bearing — it determines whether you can coordinate reliably.
 
-**Primitive rule (implementation has THREE options — prefer in this order):**
+**Primitive rule (which delegation primitive per stage; for IMPLEMENTATION, cloud dispatch is REQUIRED — the
+options below are a strict order with a human-gated fallback, not a free choice):**
 - **Default for sequential/judgment stages = run the specialist as a SUBAGENT** (the Task tool). A subagent
   runs in its own context and **returns its result to you synchronously** — reliable coordination, nothing to
   track, works at any nesting level. Use it for: bootstrap, planning, validation (rubber-duck), quality-test,
   code-review, security-compliance, and the deploy go/no-go.
-- **For IMPLEMENTATION units, prefer in this order:**
-  1. **GitHub Copilot CLOUD AGENT — assign the work-unit Issue to `@copilot`** (assign via GraphQL
-     `replaceActorsForAssignable` with the `copilot-swe-agent` Bot node id — NOT `gh issue edit --add-assignee
-     copilot`, which 404s; see the `plan-to-issues` skill). This is the DEFAULT implementer once Issues exist and the repo is gated:
-     the cloud agent runs in its OWN GitHub-Actions environment, pushes a branch, opens a **gated PR**, and
-     runs the checks — **pull-observable by design** (the branch/PR/checks *are* the status bus) with **true
+- **For IMPLEMENTATION units, the Copilot CLOUD AGENT is the REQUIRED implementer — dispatch, don't code.
+  You MUST NOT write a unit's implementation yourself in the orchestrator session (do not edit its declared
+  paths).**
+  1. **GitHub Copilot CLOUD AGENT (REQUIRED default) — assign the work-unit Issue to the `copilot-swe-agent`
+     Bot** using GraphQL `replaceActorsForAssignable`. **Dispatch preflight (mandatory):** resolve that Bot's
+     node id AT DISPATCH TIME from `suggestedActors(capabilities:[CAN_BE_ASSIGNED])` on THIS repo — it is a
+     `Bot` node id of the form `BOT_…`. **Never hardcode it, cache it across runs, or reuse a global
+     user-search node id** (a `U_…` from `search(type:USER)` is the wrong object and the mutation will fail —
+     the observed "erreur" that silently triggered a local fallback). An `@copilot` mention/comment is NOT the
+     launch mechanism, and `gh issue edit --add-assignee copilot` 404s; see the `plan-to-issues` skill. The
+     cloud agent runs in its OWN GitHub-Actions environment, pushes a branch, opens a **gated PR**, and runs the
+     checks — **pull-observable by design** (the branch/PR/checks *are* the status bus) with **true
      parallelism** and **no local-tooling dependency**. It natively dissolves F8 + F7.
-  2. **dev-fleet SUBAGENT** — the orchestrator runs the unit inline and **does the git/gh itself** (commit on a
-     unit branch, push, open the PR). Reliable fallback for **local/offline** runs or when the cloud agent
-     isn't available. Loses cross-unit parallelism, which rarely matters for small plans.
+  2. **dev-fleet SUBAGENT (fallback — HUMAN-PRE-APPROVED ONLY)** — the orchestrator runs the unit inline and
+     does the git/gh itself (commit on a unit branch, push, open the PR). This is permitted **only when BOTH
+     hold**: (a) cloud dispatch is *proven* unavailable — the Bot is absent from `suggestedActors`, or the
+     `replaceActorsForAssignable` mutation *demonstrably failed* with the error recorded — **and** (b) the human
+     has **PRE-APPROVED local fallback for this run**, recorded in `.harness/dispatch.json`
+     (`fallbackImplementation.preApproved:true` + who/when). If either is missing, **STOP and ask the human —
+     never implement the unit locally on your own initiative** (the F-local failure: a prior run silently coded
+     a unit inline instead of dispatching it, producing an ungoverned, undispatched change).
   3. **Local peer SESSION (`create_session`)** — LAST resort, only when you specifically need local worktrees
      AND you have CONFIRMED the spawned sessions actually have shell/git/gh tools. **By default they DO NOT**
      (a spawned session is often edit-only: it can write files but cannot run tests, push, open a PR, or send a
      wake — see QF3). An edit-only spawn cannot complete the pull-observable contract, so **do not use local
-     spawn for implementation unless you have verified its tooling.** If you ever do spawn, cap at the plan's
-     `concurrencyCap` and apply the pull-observable + wake + whole-fleet-reconcile discipline below.
+     spawn for implementation unless you have verified its tooling AND the human pre-approved fallback.** If you
+     ever do spawn, cap at the plan's `concurrencyCap` and apply the pull-observable + wake +
+     whole-fleet-reconcile discipline below.
 
 > Why: subagents **return**; the cloud agent is **pull-observable on GitHub**; local spawned sessions only
 > **push** (and you have no pull-status tool) AND may be **edit-only** (can't push/PR/test). So for
@@ -110,10 +140,11 @@ is load-bearing — it determines whether you can coordinate reliably.
 > **dominated**: prefer it last, and only with verified git/gh tooling.
 
 > **If a spawned unit reports `blocked` on missing tooling** (no shell/git/gh to run tests / push / open a PR /
-> wake — the QF3 case), do NOT silent-wait or re-spawn. Either: (a) **re-route that unit to the cloud agent**
-> (assign its Issue to `@copilot`), or (b) **take over yourself** — you can read the unit's worktree, so run
-> its tests, commit/push its branch, and open the gated PR on its behalf, then continue. Never leave a unit
-> stuck because its session can't reach GitHub.
+> wake — the QF3 case), do NOT silent-wait or re-spawn. **Prefer (a):** re-route that unit to the cloud agent
+> (assign its Issue to the `copilot-swe-agent` Bot via GraphQL). **(b)** only if you must: take over the git for
+> a unit that ALREADY produced its work — read its tests, commit/push its branch, and open the gated PR on its
+> behalf. You may NOT write a unit's implementation from scratch locally without the human-pre-approved fallback
+> (that's the F-local case). Never leave a unit stuck because its session can't reach GitHub.
 
 **Routing (which specialist):**
 - **Always first:** run **`workspace-hygiene`** before trusting local `.harness` state, planning, creating
@@ -124,8 +155,9 @@ is load-bearing — it determines whether you can coordinate reliably.
 - **Have an approved env but no plan** → **planning** *subagent* → decompose the intent.
 - **Have a plan, not yet validated** → **rubber-duck** *subagent*.
 - **Plan approved + Issues created** → implement each ready unit by **assigning its Issue to the Copilot cloud
-  agent** (preferred), or a **dev-fleet subagent** (local/offline fallback). Local peer-spawn only with verified
-  git/gh tooling.
+  agent (REQUIRED default)** after the dispatch preflight resolves the `copilot-swe-agent` Bot id from
+  `suggestedActors`. A **dev-fleet subagent** is allowed only as a **human-pre-approved fallback** once cloud
+  dispatch is *proven* unavailable; otherwise STOP and ask. Never implement a unit inline on your own initiative.
 - **A unit is implemented** → **quality-test** *subagent*; then **code-review** + **security-compliance** *subagents*.
 - **Integrated + approved for release** → **deployment** *subagent*.
 Recompute the next agent after each result. Never run a stage whose inputs aren't ready.
@@ -175,10 +207,15 @@ unit PR is gated. The phases:
   **`plan-to-issues`** skill → it creates the tracking Issue + one **work-unit** child Issue per approved
   unit, dependency-linked, and writes the unit→issue map into `.harness/dispatch.json`. (The first run
   skipped this; never create Issues before the human approval gate.)
-- **P3 · Dispatch from Issues (gated).** For each ready unit, implement it via **ONE** implementer — the
-  **Copilot cloud agent** (assign its Issue to `@copilot` — preferred: GitHub-hosted, pull-observable, gated
-  PR) **or** a **dev-fleet subagent** (local/offline fallback, orchestrator does git/gh), **never both for the
-  same unit** (the QF13 double-dispatch → two competing PRs). Record the chosen implementer in the ledger.
+- **P3 · Dispatch from Issues (gated).** For each ready unit, implement it via **ONE** implementer, and
+  **dispatch — never code the unit yourself.** The **Copilot cloud agent is the REQUIRED default**: run the
+  **dispatch preflight** (resolve the `copilot-swe-agent` Bot id from
+  `suggestedActors(capabilities:[CAN_BE_ASSIGNED])` on this repo — a `BOT_…` node id, never a guessed/global
+  `U_…`), then assign the Issue via GraphQL `replaceActorsForAssignable`. A **dev-fleet subagent** is allowed
+  **only** when cloud dispatch is *proven* unavailable **and** the human **pre-approved local fallback for this
+  run** (`.harness/dispatch.json → fallbackImplementation.preApproved`); otherwise **STOP and ask — do not
+  implement the unit inline.** Never use two implementers for one unit (the QF13 double-dispatch → two competing
+  PRs). Record the chosen implementer + the resolved actor id in the ledger.
   Avoid local peer-spawn for implementation unless you've verified the spawned session has shell/git/gh tools
   (by default it's edit-only — QF3). The implementer opens a **linked, gated PR** that closes the Issue on
   merge; if the cloud agent leaves it a **draft**, mark it ready once checks are green + its artifact is
@@ -262,6 +299,15 @@ unit PR is gated. The phases:
 - **Never dispatch a unit to two implementers.** One implementer per unit — do NOT assign a unit's Issue to
   the Copilot cloud agent AND run a local dev-fleet for it (QF13 double-dispatch → competing PRs). If two PRs
   ever target the same unit, keep one and CLOSE the duplicate.
+- **Never implement a work unit yourself in the orchestrator session (do not edit its declared paths).**
+  Implementation is DISPATCHED to the Copilot cloud agent. A local dev-fleet fallback is allowed ONLY after
+  cloud dispatch is *proven* unavailable AND the human PRE-APPROVED fallback for the run (recorded in
+  `.harness/dispatch.json`). Absent both, STOP and ask — silently coding the unit inline is the F-local failure
+  that produced an ungoverned, undispatched change.
+- **Never assign the cloud agent with a guessed, cached, or cross-repo actor id.** Resolve the
+  `copilot-swe-agent` Bot node id from `suggestedActors(capabilities:[CAN_BE_ASSIGNED])` on the target repo at
+  dispatch time (a `BOT_…` id). A global user-search node (`U_…`) or a stale id makes the assignment mutation
+  fail — the "erreur" that must NOT be treated as license to implement locally.
 - **Never let a finished-but-DRAFT cloud-agent PR stall the run.** If a unit's PR is green + its artifact is
   `testing-passed`, treat it as done: `gh pr ready`, sync if behind, then surface it at the PR-merge gate (QF12).
 - **Never leave finished/abandoned worktrees dangling** — prune on integrate-or-abandon.

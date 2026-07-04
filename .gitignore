@@ -38,6 +38,9 @@ tasks/
 # (kept on disk for running the improvement loop; NOT published to the public repo)
 _internal/
 
+# Presenter slide decks — local-only, NOT published to the public repo
+slides/
+
 # Common language ignores (uncomment as needed per project)
 # Python
 # __pycache__/

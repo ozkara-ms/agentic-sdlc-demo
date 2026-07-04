@@ -50,7 +50,7 @@ Each stage is a "functionality in the repo" the presenter can jump to independen
 | Fallback | Trigger the fallback path once | Pre-baked branch / recording renders the same outcome |
 | Setup | Follow setup instructions on a clean environment | Environment reproduces from scratch with no hidden state |
 | Asset integrity | Lint `docs/agentic-engineering-on-github/harness/**/*.yml` + check the asset's internal links | All harness YAML parses; every cross-doc link resolves |
-| **Harness self-test (runnable, offline)** | `node _internal/harness-selftest/validate/run.mjs` | `83/83 fixtures correct`, `negatives caught: 52/52`, exit 0 — each gate labelled by enforcement type |
+| **Harness self-test (runnable, offline)** | `node _internal/harness-selftest/validate/run.mjs` | `86/86 fixtures correct`, `negatives caught: 54/54`, exit 0 — each gate labelled by enforcement type |
 | **Harness run-status gate (Loop 3)** | `node _internal/harness-selftest/validate/run.mjs --filter deployment` | deployment positives pass + run-conclusion negatives caught (red-for-SHA, green-for-wrong-SHA, older-green+newer-red, queued-timeout, cancelled) |
 | **Harness scenario (one)** | `node _internal/harness-selftest/validate/run.mjs --scenario s1` | one scenario's positives pass + negatives caught (scenario axis) |
 | **Self-test sample app** | `npm --prefix _internal/harness-selftest/sample-app ci && npm --prefix _internal/harness-selftest/sample-app test` | 15 unit+e2e tests green (the "before" URL-shortener, no rate limiting yet) |

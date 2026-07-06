@@ -8,6 +8,10 @@ Feed it a real-world **input** — a new requirement, meeting notes, or an actio
 
 Each stage is a self-contained "functionality" the presenter can demo on its own, or chain into one continuous end-to-end story. It is a **customer-facing showcase, not a hands-on lab** — the presenter drives, the audience watches the agentic workflow in action.
 
+## 🎞️ Slides
+
+**[View the presenter deck](https://ozgurkarahan.github.io/agentic-sdlc-demo/slides/agentic-sdlc-lifecycle.html)** — 19 slides covering the market landscape, the reusable harness, and the end-to-end demo walkthrough. Served via GitHub Pages from [`docs/slides/`](docs/slides/) ([mirror](https://ozkara-ms.github.io/agentic-sdlc-demo/slides/agentic-sdlc-lifecycle.html)).
+
 ## Status
 
 Scaffolded 2026-06-18 from `project-template`. Not started — the first working session researches the topic and proposes the demo plan (sample app, input→lifecycle story, per-stage flows, fallback). See `AGENT.md` § **First Session Instructions**.

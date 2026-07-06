@@ -120,6 +120,19 @@ jobs:
             [ "$i" = "40" ] && { echo "::error::$NEW never became latest-ready"; exit 1; }
             sleep 5
           done
+          # ANTI-ROLLOVER-RACE: single-revision mode briefly CO-SERVES the old + new revision while the
+          # old one drains. With a per-revision in-memory store, a CRUD round-trip that spans the window
+          # hits inconsistent stores (create on NEW, delete on OLD → orphaned data + a false-RED live E2E).
+          # Wait until NEW is the SOLE active revision before smoking / running the live acceptance E2E.
+          echo "Waiting for $NEW to be the sole active revision (old revision fully drained)…"
+          for i in $(seq 1 40); do
+            ACTIVE="$(az containerapp revision list -g "$RG" -n "$APP" --query "[?properties.active].name" -o tsv 2>/dev/null | tr -d '\r')"
+            COUNT="$(printf '%s\n' "$ACTIVE" | grep -c . || true)"
+            echo "  settle $i: active=[$(printf '%s' "$ACTIVE" | tr '\n' ' ')] count=$COUNT"
+            { [ "$COUNT" = "1" ] && [ "$ACTIVE" = "$NEW" ]; } && { echo "$NEW is the sole active revision."; break; }
+            [ "$i" = "40" ] && { echo "::warning::$NEW not sole-active after wait; proceeding (gate may be flaky)"; break; }
+            sleep 5
+          done
           FQDN="$(az containerapp show -g "$RG" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)"
           echo "STAGING_URL=https://$FQDN/healthz" >> "$GITHUB_ENV"
           echo "STAGING_BASE=https://$FQDN" >> "$GITHUB_ENV"

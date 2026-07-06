@@ -107,7 +107,12 @@ jobs:
           az containerapp update -g "$RG" -n "$APP" \
             --image "${{ steps.push.outputs.image }}" \
             --revision-suffix "$SUFFIX" \
+            --min-replicas 1 --max-replicas 1 \
             --set-env-vars "FAULT_HEALTHZ=$FAULT" "FAULT_HEALTHZ_PROD=0" -o none
+          # --min-replicas 1 keeps ONE warm replica during the acceptance window: with a per-replica
+          # in-memory store, scale-to-zero recycling / cold-start churn mid-test makes the live CRUD
+          # round-trip inconsistent (the live E2E's real-results value repeatedly caught this). Pinned
+          # 1..1 + the sole-active-revision wait below make the deployed store stable for the gate.
           # ANTI-STALE-GREEN: `az containerapp update` returns once the control plane accepts the revision,
           # but ingress keeps serving the PREVIOUS revision until the new one is ready. Smoking immediately
           # races that rollout and can validate the stale-good revision (false GO). Wait until OUR new

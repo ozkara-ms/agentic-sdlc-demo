@@ -81,6 +81,10 @@ in autopilot.**
 
 - **Style:** `[link to style guide / formatter config]`. Match existing code; don't reformat
   unrelated lines.
+- **Frontend/UI:** For any user-facing web interface unit, invoke
+  `.github/skills/frontend-design.skill.md`. Preserve the existing brand/design system unless the
+  approved unit authorizes a redesign; implement responsive, accessible, complete interaction states
+  and verify them with the required UI tests/E2E flow.
 - **Tests:** colocate with `[test convention]`; every behavior change ships with tests **and** evals.
 - **Commits/PRs:** small, focused, linked to an Issue; PR description states what + why + how-verified.
 - **Docs:** update `README` / API reference when behavior or interfaces change.
@@ -106,7 +110,7 @@ in autopilot.**
 | Deployment / Validation | `.github/agents/deployment.agent.md` |
 | Repeatable procedures | `.github/prompts/*.prompt.md` |
 | Project-zero bootstrap | `.github/prompts/bootstrap-environment.prompt.md` → produces `.harness/project.json` |
-| Skills (checks agents invoke) | `.github/skills/*.skill.md` (workspace-hygiene · workplace-intake · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues**) |
+| Skills (procedures agents invoke) | `.github/skills/*.skill.md` (workspace-hygiene · workplace-intake · **frontend-design** · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues**) |
 | Work intake | `.github/ISSUE_TEMPLATE/work-unit.yml` — materialized from the approved plan by **`plan-to-issues`** |
 | Safety overlay | `.github/instructions/agent-safety.instructions.md` |
 | Verification (GitHub phase — **wired before any Issue**) | `.github/workflows/tests-and-evals.yml` |

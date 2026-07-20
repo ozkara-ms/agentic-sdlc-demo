@@ -1,18 +1,19 @@
 # `harness/skills/` — the repeatable procedures agents invoke (NO custom dispatcher)
 
-A **skill** is a small, repeatable procedure an agent runs to do one job: run a
-unit's tests, check its dependencies, or deploy it. Each skill is plain markdown
-the agent runtime reads — exactly like `agents/` and `prompts/`. The skill does
-**not** contain the gate logic; it **wraps** a runnable check and tells the agent
-how to invoke it and how to read the result **honestly**.
+A **skill** is a small, repeatable procedure an agent runs to do one job: preflight
+a workspace, design a frontend, run tests, check dependencies, or deploy. Each skill
+is plain markdown the agent runtime reads — exactly like `agents/` and `prompts/`.
+Some skills **wrap** runnable checks; others shape orchestration or implementation
+craft. A craft skill never claims to be an enforcement gate.
 
-## Where the gate LOGIC lives (and where it does NOT)
+## Where gate-wrapper LOGIC lives (and where it does NOT)
 
-The runnable checks (`checks/scripts/*.mjs`, `checks/lib/*.mjs`) are the harness's
-**engine**. They live in the **harness home repo** — they are **NOT** copied into a
-target. A target carries only the markdown (`AGENTS.md` + `agents/` + `prompts/` +
-`skills/`). So a skill references a check through a location variable, not a path
-that must exist in the target:
+For skills that wrap gates, the runnable checks (`checks/scripts/*.mjs`,
+`checks/lib/*.mjs`) are the harness's **engine**. They live in the **harness home
+repo** — they are **NOT** copied into a target. A target carries only the markdown
+(`AGENTS.md` + `agents/` + `prompts/` + `skills/`). So a gate-wrapper skill
+references a check through a location variable, not a path that must exist in the
+target:
 
 - **`<HARNESS_ROOT>`** = the path to the harness home's `harness/` directory. In
   **LOCAL** mode the orchestrator sets it (e.g. `…/agentic-sdlc-demo/harness`) and
@@ -35,20 +36,27 @@ that must exist in the target:
 
 ## The skills
 
-| Skill | Wraps (engine in the harness home) | Owner agent |
+| Skill | Procedure / wrapped engine | Owner agent |
 |---|---|---|
+| [`workspace-hygiene`](workspace-hygiene.skill.md) | current-branch + stale-run-artifact preflight | orchestrator |
+| [`workplace-intake`](workplace-intake.skill.md) | WorkIQ/M365 intake with a human-pasted fallback | orchestrator |
+| [`frontend-design`](frontend-design.skill.md) | intentional UI design + production implementation procedure; verified by required tests/UI E2E | dev-fleet |
 | [`run-tests`](run-tests.skill.md) | the unit's `requiredTest` + `<HARNESS_ROOT>/checks/scripts/trajectory-check.mjs` + `eval-rubric.mjs` | quality-test |
 | [`check-deps`](check-deps.skill.md) | `<HARNESS_ROOT>/checks/scripts/pin-check.mjs` | security-compliance |
 | [`deploy`](deploy.skill.md) | container build + `<HARNESS_ROOT>/checks/scripts/smoke-check.mjs` + `checks/lib/run-status.mjs` | deployment |
+| [`verify-gates`](verify-gates.skill.md) | `deploy/github/enforce-protections.ps1` + live GitHub configuration inspection | deployment |
+| [`plan-to-issues`](plan-to-issues.skill.md) | validated, human-approved plan → GitHub Issues + dispatch map | orchestrator |
 
 ## Honesty rules (apply to every skill)
 
 - **Never fake a green.** A skipped, empty, mocked, or "not applicable" result is
   **not** a pass. Report it as exactly what it is.
-- **Run the wrapped check on the real artifact** (the actual diff / built app /
-  deployed instance) — never on a placeholder.
-- **Report the enforcement label** the check emits (🟩 native / 🟦 layered /
-  🟨 advisory / ⛔ external) so nothing reads stronger than it is.
+- **Use the real artifact.** Gate wrappers run on the actual diff / built app /
+  deployed instance; craft skills operate on the real interface, not a placeholder.
+- **Report the enforcement boundary.** Include the label a check emits (🟩 native /
+  🟦 layered / 🟨 advisory / ⛔ external). A craft procedure such as
+  `frontend-design` is behavior-shaping; only its tests, UI E2E, and configured
+  review controls provide evidence or enforcement.
 - **Polyglot:** skills are ecosystem-agnostic. They read the unit's declared
   `requiredTest` / manifest and pass `--ecosystem node|python` to the check; the
   check (not the skill) owns the language-specific logic.

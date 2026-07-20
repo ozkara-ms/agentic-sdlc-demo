@@ -76,6 +76,10 @@ unit observable — the antidote to push-only reporting (the orchestrator polls 
   nothing is indistinguishable from a crashed one and forces the orchestrator to guess (the F8 root cause).
 
 ## Skills
+- **`frontend-design`** (`.github/skills/frontend-design.skill.md`) — invoke for every unit that creates or
+  materially changes user-facing web UI. Establish an intentional design direction, preserve the existing
+  design system unless redesign is in scope, implement complete responsive/accessibility states, and verify
+  the real interface rather than a static mock.
 - **`run-tests`** (`.github/skills/run-tests.skill.md`) — run the unit's `requiredTest` + trajectory/eval on
   the real diff and report honestly. The dev-fleet agent runs this before reporting "done".
 

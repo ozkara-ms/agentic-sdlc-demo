@@ -91,7 +91,7 @@ it applies.
 | | |
 |---|---|
 | **Responsibility** | A **fleet** of **GitHub Copilot coding agent** instances, each assigned **one parallel-safe Issue**, each implementing on **its own branch** and opening **its own linked PR**, concurrently. Dependent units wait per the graph. **Conductor** mode (Copilot in the IDE) handles ambiguous slices. |
-| **Skills + encoding** | Repo conventions + "never do" rules in **`AGENTS.md`** (the coding agent obeys it); this role is **native**, so it's configured by rule files rather than a custom persona file. |
+| **Skills + encoding** | Repo conventions + "never do" rules in **`AGENTS.md`** (the coding agent obeys it); user-facing UI units additionally load **`skills/frontend-design.skill.md`** for an intentional design direction, complete interaction states, responsiveness, and accessibility. This role is **native**, so it's configured primarily by rule and skill files rather than a custom persona file. |
 | **Context types** | Instructions, Knowledge, Tools. |
 | **GitHub primitives** | 🟩 Copilot coding agent (isolated env/branch/PR; concurrent assignment); auto **CodeQL + secret scanning + dependency review + quality self-review** on its own code (baseline — **no GHAS license required**). |
 | **Inputs / Outputs** | In: one approved, parallel-safe Issue. Out: a branch + a linked PR with a self-review. |

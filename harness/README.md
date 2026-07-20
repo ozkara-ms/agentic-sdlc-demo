@@ -35,7 +35,7 @@ the enforcement-boundary map in `../02-agents-skills-harness.md` Part 4.)
 | `agents/deployment.agent.md` | `.github/agents/` | Deployment / Validation role |
 | `prompts/decompose-intent.prompt.md` | `.github/prompts/` | Decomposition procedure |
 | `prompts/validate-plan.prompt.md` | `.github/prompts/` | Plan-validation procedure |
-| `skills/*.skill.md` | `.github/skills/` | Agent skills: workspace-hygiene · workplace-intake · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues** |
+| `skills/*.skill.md` | `.github/skills/` | Agent skills: workspace-hygiene · workplace-intake · **frontend-design** · run-tests · check-deps · deploy · **verify-gates** · **plan-to-issues** |
 | `workflows/tests-and-evals.yml` | `.github/workflows/` | Verification: tests + evals |
 | `workflows/security-gate.yml` | `.github/workflows/` | Security gate (GHAS) |
 | `ISSUE_TEMPLATE/work-unit.yml` | `.github/ISSUE_TEMPLATE/` | Work intake — materialized from the approved plan by `plan-to-issues` |
